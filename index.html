@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ANGEL MOON | Fashion • Style • More — Boutique Femenina</title>
+    <meta
+      name="description"
+      content="ANGEL MOON: tienda virtual de ropa y accesorios femeninos modernos, elegantes y accesibles. Asesoría personalizada, apartados con 50%, asistente virtual y pedidos directos a WhatsApp."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- 1. HEADER / BARRA DE NAVEGACIÓN FIJA -->
+    <header class="site-header" id="top">
+      <div class="container header-inner">
+        <a href="#inicio" class="brand" aria-label="Inicio ANGEL MOON">
+          <img
+            src="logo.png"
+            alt="Logotipo oficial ANGEL MOON"
+            class="brand-logo"
+          />
+          <div class="brand-text">
+            <span class="brand-name">ANGEL MOON</span>
+            <span class="brand-slogan">Moda femenina • Estilo • Más</span>
+          </div>
+        </a>
+
+        <nav class="main-nav" id="mainNav" aria-label="Navegación principal">
+          <a href="#nosotros" class="nav-link">Nosotros</a>
+          <a href="#coleccion" class="nav-link">Colección y Precios</a>
+          <a href="#experiencia" class="nav-link">Experiencia</a>
+          <a href="#asistente" class="nav-link">Asistente</a>
+          <a href="#contacto" class="nav-link">Contacto</a>
+          <a href="#mi-lista" class="btn btn-outline nav-cta" id="navListBtn">
+            🛍️ Mi Lista (<span id="navListCount">0</span>)
+          </a>
+          <button
+            type="button"
+            class="btn btn-whatsapp nav-cta"
+            id="navWhatsappBtn"
+          >
+            📲 WhatsApp Oficial
+          </button>
+        </nav>
+
+        <button
+          type="button"
+          class="hamburger"
+          id="hamburgerBtn"
+          aria-label="Abrir menú de navegación"
+          aria-expanded="false"
+          aria-controls="mainNav"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- 2. SECCIÓN HERO (INICIO) -->
+      <section class="hero" id="inicio">
+        <div class="container hero-grid">
+          <div class="hero-content">
+            <div class="hero-badges">
+              <span class="status-pill" id="storeStatusPill">
+                <span class="status-dot" id="storeStatusDot"></span>
+                <span id="storeStatusText">Verificando horario...</span>
+              </span>
+              <span class="project-pill">Proyecto Final • Servicio al Cliente 2026</span>
+            </div>
+
+            <h1 class="hero-title">
+              Moda femenina con <em>elegancia, comodidad</em> y asesoría cercana
+              para resaltar tu estilo.
+            </h1>
+
+            <p class="hero-description">
+              En <strong>ANGEL MOON</strong> seleccionamos prendas y accesorios
+              modernos, cómodos y accesibles para mujeres de 18 a 40 años. Arma
+              tu lista de prendas favoritas en la web y envíala con un solo clic
+              a nuestro <strong>WhatsApp Business (+506 7097-3956)</strong> o
+              mediante nuestro Asistente Virtual.
+            </p>
+
+            <div class="hero-actions">
+              <a href="#coleccion" class="btn btn-accent">
+                Explorar Colección y Armar Lista
+              </a>
+              <a href="#asistente" class="btn btn-outline">
+                Asistente Virtual Paso a Paso
+              </a>
+              <button
+                type="button"
+                class="btn btn-whatsapp"
+                id="heroWhatsappBtn"
+              >
+                📲 Enviar Consulta / Lista a WhatsApp
+              </button>
+            </div>
+
+            <!-- 3 Puntos Rápidos Diferenciales -->
+            <div class="hero-highlights">
+              <article class="highlight-card">
+                <span class="highlight-label">Atención &amp; WhatsApp</span>
+                <strong>Lista sincronizada</strong>
+                <p>Elige tus prendas y tallas aquí y pásalas listas a WhatsApp.</p>
+              </article>
+              <article class="highlight-card">
+                <span class="highlight-label">Métodos de Pago</span>
+                <strong>SINPE Móvil y Efectivo</strong>
+                <p>Elige la opción más cómoda al confirmar tu compra.</p>
+              </article>
+              <article class="highlight-card">
+                <span class="highlight-label">Modalidad de Apartado</span>
+                <strong>Abono del 50%</strong>
+                <p>Entregas en San José (Parque Central, sábados) y envíos.</p>
+              </article>
+            </div>
+          </div>
+
+          <!-- Vitrina Visual del Logotipo Oficial -->
+          <div class="hero-showcase">
+            <div class="logo-frame">
+              <div class="logo-glow" aria-hidden="true"></div>
+              <img
+                src="logo.png"
+                alt="Logotipo ANGEL MOON — Fashion Style More"
+                class="hero-logo-img"
+              />
+              <div class="logo-caption">
+                <span class="caption-brand">ANGEL MOON</span>
+                <span class="caption-sub">Fashion • Style • More</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. NUESTRA ESENCIA Y PROPUESTA DE VALOR -->
+      <section class="section section-secondary" id="nosotros">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Nuestra Esencia y Propuesta de Valor</span>
+            <h2 class="section-title">¿Por qué nació ANGEL MOON?</h2>
+            <p class="section-lead">
+              ANGEL MOON nació como un emprendimiento impulsado por la ilusión de
+              crecer, emprender y compartir la pasión por la moda. Se creó con el
+              propósito de ofrecer prendas y accesorios modernos, bonitos y
+              accesibles para mujeres que disfrutan expresar su personalidad a
+              través de su vestimenta, construyendo una marca cercana basada en
+              la dedicación, el esfuerzo y el amor por el detalle.
+            </p>
+          </div>
+
+          <!-- 4 Tarjetas Pilares de Valor -->
+          <div class="pillars-grid">
+            <article class="pillar-card">
+              <span class="pillar-num">01</span>
+              <h3>Elegancia y Variedad</h3>
+              <p>
+                Prendas modernas, bonitas y versátiles en diferentes estilos y
+                tallas para resaltar la autenticidad de cada mujer.
+              </p>
+            </article>
+            <article class="pillar-card">
+              <span class="pillar-num">02</span>
+              <h3>Calidad en Telas y Acabados</h3>
+              <p>
+                Seleccionamos cuidadosamente piezas cómodas, frescas y con
+                excelentes acabados pensadas para durar y lucir impecables.
+              </p>
+            </article>
+            <article class="pillar-card">
+              <span class="pillar-num">03</span>
+              <h3>Precios Accesibles</h3>
+              <p>
+                Moda femenina actual a precios justos y razonables, con opción de
+                apartado abonando el 50% de su valor.
+              </p>
+            </article>
+            <article class="pillar-card">
+              <span class="pillar-num">04</span>
+              <h3>Confianza y Asesoría Sin Presiones</h3>
+              <p>
+                Atención amable, honesta y personalizada en cada consulta para
+                que elijas tu talla y estilo con total seguridad.
+              </p>
+            </article>
+          </div>
+
+          <!-- Subsección: ¿Para quiénes diseñamos nuestra experiencia? -->
+          <div class="profiles-block">
+            <div class="profiles-header">
+              <span class="section-kicker">Público Meta (18 – 40 años)</span>
+              <h3 class="profiles-title">
+                ¿Para quiénes diseñamos nuestra experiencia?
+              </h3>
+            </div>
+
+            <div class="profiles-grid">
+              <article class="profile-card">
+                <span class="profile-tag">Perfil 01</span>
+                <h4>La Mujer Profesional y Versátil</h4>
+                <p class="profile-meta">
+                  <strong>Qué busca:</strong> Blusas satinadas, conjuntos
+                  elegantes y pantalones cómodos para oficina o salidas.
+                </p>
+                <p class="profile-meta">
+                  <strong>Expectativa:</strong> Prendas con buenos acabados,
+                  tallas claras y atención ágil sin perder tiempo.
+                </p>
+                <div class="profile-solution">
+                  <strong>Cómo lo resolvemos:</strong> Selecciona sus prendas y
+                  tallas en la página y envía la lista completa por WhatsApp en
+                  segundos.
+                </div>
+              </article>
+
+              <article class="profile-card">
+                <span class="profile-tag">Perfil 02</span>
+                <h4>La Amante de las Tendencias Digitales</h4>
+                <p class="profile-meta">
+                  <strong>Qué busca:</strong> Vestidos de temporada, tops
+                  modernos y accesorios rose gold para expresar su personalidad.
+                </p>
+                <p class="profile-meta">
+                  <strong>Expectativa:</strong> Comprar de forma digital,
+                  confiable y sin procesos complicados ni incertidumbre de stock.
+                </p>
+                <div class="profile-solution">
+                  <strong>Cómo lo resolvemos:</strong> Vitrina interactiva con
+                  guardado automático de su lista y pagos cómodos vía SINPE
+                  Móvil o efectivo.
+                </div>
+              </article>
+
+              <article class="profile-card">
+                <span class="profile-tag">Perfil 03</span>
+                <h4>La Clienta Práctica y Planificadora</h4>
+                <p class="profile-meta">
+                  <strong>Qué busca:</strong> Prendas accesibles para eventos o
+                  uso diario con facilidad de apartado y entrega segura.
+                </p>
+                <p class="profile-meta">
+                  <strong>Expectativa:</strong> Poder apartar su prenda favorita
+                  sin miedo a perderla y recibirla puntualmente.
+                </p>
+                <div class="profile-solution">
+                  <strong>Cómo lo resolvemos:</strong> Cálculo automático del 50%
+                  de apartado en su lista y entregas puntuales en Parque Central
+                  (San José) los sábados o envíos.
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. COLECCIÓN, PRENDAS Y LISTA DE PRECIOS + MI LISTA PARA WHATSAPP -->
+      <section class="section" id="coleccion">
+        <div class="container">
+          <div class="section-header section-header-row">
+            <div>
+              <span class="section-kicker">Catálogo Interactivo Conectado a WhatsApp</span>
+              <h2 class="section-title">Colección, Prendas y Lista de Precios</h2>
+              <p class="section-lead">
+                Elige la talla y modalidad de cada prenda y agrégala a
+                <strong>Mi Lista de Pedido</strong>. Toda tu selección se guarda
+                automáticamente en la página para que cuando pases a WhatsApp ya
+                vaya lista toda la información de lo que querías.
+              </p>
+            </div>
+          </div>
+
+          <!-- Filtros de Categoría -->
+          <div
+            class="filter-bar"
+            role="tablist"
+            aria-label="Filtrar prendas por categoría"
+          >
+            <button
+              type="button"
+              class="filter-btn active"
+              data-category="todos"
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              class="filter-btn"
+              data-category="blusas"
+            >
+              Blusas y Tops
+            </button>
+            <button
+              type="button"
+              class="filter-btn"
+              data-category="vestidos"
+            >
+              Vestidos y Conjuntos
+            </button>
+            <button
+              type="button"
+              class="filter-btn"
+              data-category="pantalones"
+            >
+              Pantalones y Jeans
+            </button>
+            <button
+              type="button"
+              class="filter-btn"
+              data-category="accesorios"
+            >
+              Accesorios / Temporada
+            </button>
+          </div>
+
+          <!-- Grid de Prendas (Renderizado por JS) -->
+          <div class="catalog-grid" id="catalogGrid"></div>
+
+          <!-- Panel de Mi Lista Guardada (Sincronizado con LocalStorage y WhatsApp API) -->
+          <div class="saved-list-panel" id="mi-lista">
+            <div class="saved-list-header">
+              <div>
+                <span class="section-kicker">Guardado Automático en la Página</span>
+                <h3>🛍️ Mi Lista de Prendas para Pedir o Apartar</h3>
+                <p>
+                  Tus prendas seleccionadas se conservan aquí y se incluyen
+                  automáticamente cuando envías tu pedido por el Asistente o por
+                  WhatsApp.
+                </p>
+              </div>
+              <div class="saved-list-totals" id="savedListTotals">
+                <div class="total-chip">
+                  <span>Total Estimado:</span>
+                  <strong id="listTotalAmount">₡0</strong>
+                </div>
+                <div class="total-chip accent-chip">
+                  <span>Apartado (50%):</span>
+                  <strong id="listDepositAmount">₡0</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="saved-list-items" id="savedListItems"></div>
+
+            <div class="saved-list-actions">
+              <button
+                type="button"
+                class="btn btn-whatsapp"
+                id="sendListWhatsappBtn"
+              >
+                📲 Enviar Mi Lista Completa a WhatsApp (+506 7097-3956)
+              </button>
+              <button
+                type="button"
+                class="btn btn-accent"
+                id="completeListInAssistantBtn"
+              >
+                👗 Completar Datos con el Asistente Paso a Paso
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline"
+                id="clearSavedListBtn"
+              >
+                Vaciar Lista
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. CALIDAD Y EXPERIENCIA DE ATENCIÓN (TABS EN JS) -->
+      <section class="section section-secondary" id="experiencia">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Excelencia en Servicio al Cliente</span>
+            <h2 class="section-title">Calidad y Experiencia de Atención</h2>
+            <p class="section-lead">
+              Cada interacción en ANGEL MOON sigue estándares claros de servicio,
+              momentos de verdad cuidados al detalle y un código de atención
+              amable y organizado.
+            </p>
+          </div>
+
+          <div class="tabs-bar" role="tablist" aria-label="Experiencia de atención">
+            <button
+              type="button"
+              class="tab-btn active"
+              data-tab="kpis"
+              role="tab"
+              aria-selected="true"
+            >
+              1. Indicadores de Calidad (KPIs)
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              data-tab="momentos"
+              role="tab"
+              aria-selected="false"
+            >
+              2. Los 5 Momentos de Verdad
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              data-tab="normas"
+              role="tab"
+              aria-selected="false"
+            >
+              3. Código de Servicio (8 Normas)
+            </button>
+          </div>
+
+          <!-- Pestaña 1: KPIs -->
+          <div class="tab-panel active" id="tab-kpis" role="tabpanel">
+            <div class="kpi-grid">
+              <article class="kpi-card">
+                <span class="kpi-value">&lt; 2 min</span>
+                <h4>Tiempo de Primera Respuesta</h4>
+                <p>
+                  Atención inmediata mediante nuestro asistente virtual y paso
+                  directo con tu lista a WhatsApp Business.
+                </p>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-value">96%</span>
+                <h4>Satisfacción de Clientas (CSAT)</h4>
+                <p>
+                  Evaluamos la cordialidad, claridad en precios y comodidad en
+                  cada compra realizada.
+                </p>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-value">90%</span>
+                <h4>Resolución al Primer Contacto</h4>
+                <p>
+                  Respuestas completas sobre tallas, métodos de pago, apartados
+                  y entregas desde el primer mensaje.
+                </p>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-value">98%</span>
+                <h4>Entregas y Apartados a Tiempo</h4>
+                <p>
+                  Cumplimiento puntual los sábados en Parque Central San José y
+                  en envíos coordinados.
+                </p>
+              </article>
+              <article class="kpi-card">
+                <span class="kpi-value">99%</span>
+                <h4>Precisión en Tallas y Pedidos</h4>
+                <p>
+                  Verificación previa de medidas, color y acabados antes de
+                  confirmar cualquier apartado o envío.
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <!-- Pestaña 2: 5 Momentos de Verdad -->
+          <div class="tab-panel" id="tab-momentos" role="tabpanel">
+            <div class="moments-grid">
+              <article class="moment-card">
+                <span class="moment-num">01</span>
+                <h4>Bienvenida Cordial</h4>
+                <p>
+                  Recibimos a cada clienta con calidez y entusiasmo desde el
+                  primer saludo, haciéndola sentir escuchada y valorada.
+                </p>
+              </article>
+              <article class="moment-card">
+                <span class="moment-num">02</span>
+                <h4>Asesoría de Prendas y Tallas</h4>
+                <p>
+                  Escuchamos la ocasión, gustos y medidas para recomendar
+                  estilos que favorezcan su personalidad y comodidad.
+                </p>
+              </article>
+              <article class="moment-card">
+                <span class="moment-num">03</span>
+                <h4>Verificación y Apartado Transparente</h4>
+                <p>
+                  Confirmamos disponibilidad y precio exacto, explicando con
+                  claridad el abono del 50% y la fecha de cancelación.
+                </p>
+              </article>
+              <article class="moment-card">
+                <span class="moment-num">04</span>
+                <h4>Pago Ágil y Seguro</h4>
+                <p>
+                  Facilitamos el pago mediante SINPE Móvil o efectivo con
+                  confirmación inmediata del pedido o apartado.
+                </p>
+              </article>
+              <article class="moment-card">
+                <span class="moment-num">05</span>
+                <h4>Entrega Puntual y Despedida Memorable</h4>
+                <p>
+                  Entregamos la prenda en óptimas condiciones y cerramos con un
+                  mensaje cálido invitándola a regresar pronto.
+                </p>
+              </article>
+            </div>
+          </div>
+
+          <!-- Pestaña 3: 8 Normas del Código de Servicio -->
+          <div class="tab-panel" id="tab-normas" role="tabpanel">
+            <div class="rules-grid">
+              <article class="rule-card">
+                <span class="rule-badge">Norma 01</span>
+                <p>
+                  Saludar siempre con amabilidad, respeto y una actitud cercana
+                  que refleje la identidad de ANGEL MOON.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 02</span>
+                <p>
+                  Brindar información clara, honesta y actualizada sobre precios,
+                  tallas reales, telas y disponibilidad de cada prenda.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 03</span>
+                <p>
+                  Asesorar sin presionar a la clienta, respetando su estilo
+                  personal, presupuesto y preferencias.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 04</span>
+                <p>
+                  Responder consultas frecuentes con rapidez y trasladar casos
+                  especiales (como cambios) a la encargada por WhatsApp.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 05</span>
+                <p>
+                  Respetar y explicar con transparencia las condiciones de
+                  apartado (50% de abono y fecha límite acordada).
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 06</span>
+                <p>
+                  Revisar cuidadosamente cada prenda y accesorio antes de su
+                  entrega para garantizar calidad y buenos acabados.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 07</span>
+                <p>
+                  Cumplir puntualmente con los horarios de entrega personal en
+                  San José y con la coordinación de envíos.
+                </p>
+              </article>
+              <article class="rule-card">
+                <span class="rule-badge">Norma 08</span>
+                <p>
+                  Agradecer cada compra o consulta con un mensaje cordial que
+                  fortalezca la confianza a largo plazo.
+                </p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. ASISTENTE VIRTUAL DE MODA: FAQ Y PEDIDOS PASO A PASO CONECTADO A WHATSAPP -->
+      <section class="section" id="asistente">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Atención Inteligente + Conexión a WhatsApp</span>
+            <h2 class="section-title">
+              Asistente Virtual de Moda: Preguntas Frecuentes y Pedidos Paso a Paso
+            </h2>
+            <p class="section-lead">
+              Resuelve tus dudas o completa tu pedido en 5 pasos. El asistente
+              reconoce las prendas que guardaste en <strong>Mi Lista</strong> y,
+              al finalizar, envía tu ficha completa directamente al WhatsApp de
+              ANGEL MOON (<strong>+506 7097-3956</strong>).
+            </p>
+          </div>
+
+          <div class="assistant-layout">
+            <!-- Panel Izquierdo: Preguntas Rápidas y Botones de Pedido / WhatsApp -->
+            <aside class="assistant-sidebar">
+              <div class="sidebar-card">
+                <h3>Consultas Rápidas (FAQ)</h3>
+                <p class="sidebar-hint">
+                  Haz clic en cualquier tema para consultar al asistente:
+                </p>
+
+                <div class="faq-quick-list">
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="horario"
+                  >
+                    Horario de atención y entregas
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="precios"
+                  >
+                    Precios y disponibilidad de prendas
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="tallas"
+                  >
+                    Tallas y medidas disponibles
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="pagos"
+                  >
+                    Métodos de pago (SINPE Móvil / Efectivo)
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="apartados"
+                  >
+                    ¿Cómo funcionan los apartados (50%)?
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="envios"
+                  >
+                    Envíos y entregas en Parque Central
+                  </button>
+                  <button
+                    type="button"
+                    class="faq-quick-btn"
+                    data-faq="cambios"
+                  >
+                    Cambios de prendas y hablar con encargada
+                  </button>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <button
+                  type="button"
+                  id="startOrderFlowBtn"
+                  class="btn btn-accent btn-full"
+                >
+                  👗 Hacer Pedido o Apartado Paso a Paso
+                </button>
+
+                <button
+                  type="button"
+                  id="assistantDirectWhatsappBtn"
+                  class="btn btn-whatsapp btn-full sidebar-wa-btn"
+                >
+                  📲 Pasar al WhatsApp con Mi Lista Guardada
+                </button>
+
+                <p class="sidebar-note">
+                  Toda la información que ingreses y las prendas de tu lista
+                  quedarán listas en el mensaje de WhatsApp.
+                </p>
+              </div>
+            </aside>
+
+            <!-- Panel Derecho: Ventana de Chat Interactiva -->
+            <div class="chat-window" aria-live="polite">
+              <div class="chat-header">
+                <div class="chat-header-info">
+                  <img
+                    src="logo.png"
+                    alt="Avatar ANGEL MOON"
+                    class="chat-avatar"
+                  />
+                  <div>
+                    <strong>Asistente Virtual ANGEL MOON</strong>
+                    <span class="chat-mode-badge" id="chatModeBadge">
+                      Modo: Preguntas Frecuentes
+                    </span>
+                  </div>
+                </div>
+                <div class="chat-header-actions">
+                  <button
+                    type="button"
+                    id="switchFaqModeBtn"
+                    class="chat-mini-btn active"
+                  >
+                    FAQ
+                  </button>
+                  <button
+                    type="button"
+                    id="switchOrderModeBtn"
+                    class="chat-mini-btn"
+                  >
+                    Pedido Paso a Paso
+                  </button>
+                  <button
+                    type="button"
+                    id="chatHeaderWhatsappBtn"
+                    class="chat-mini-btn chat-wa-mini"
+                    title="Abrir WhatsApp con lo guardado"
+                  >
+                    📲 WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    id="resetChatBtn"
+                    class="chat-mini-btn"
+                    title="Reiniciar conversación"
+                  >
+                    Reiniciar
+                  </button>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chatMessages"></div>
+
+              <div class="chat-quick-bar" id="chatQuickBar"></div>
+
+              <form class="chat-input-form" id="chatForm">
+                <input
+                  type="text"
+                  id="chatInput"
+                  placeholder="Escribe tu pregunta o responde el paso actual..."
+                  autocomplete="off"
+                />
+                <button type="submit" class="btn btn-accent chat-send-btn">
+                  Enviar
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. CONTACTO, HORARIO Y CONEXIÓN OFICIAL A WHATSAPP -->
+      <section class="section section-secondary" id="contacto">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-kicker">Atención Directa y Envío a WhatsApp</span>
+            <h2 class="section-title">Contacto, Horario y Solicitud de Pedido</h2>
+            <p class="section-lead">
+              Tus datos y las prendas que elegiste se guardan automáticamente en
+              la página para que puedas enviarlos con un clic a nuestro WhatsApp
+              oficial.
+            </p>
+          </div>
+
+          <div class="contact-grid">
+            <!-- Tarjeta de Información y Conexión Directa a WhatsApp -->
+            <div class="contact-info-card">
+              <h3>Información de la Boutique</h3>
+
+              <div class="info-list">
+                <div class="info-item">
+                  <span class="info-label">WhatsApp Business Oficial</span>
+                  <p>
+                    Atención personalizada, recepción de listas de pedido,
+                    apartados y confirmación de disponibilidad en el número
+                    <strong>+506 7097-3956</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-whatsapp contact-wa-btn"
+                    id="contactCardWhatsappBtn"
+                  >
+                    📲 Abrir WhatsApp con Mi Lista (+506 7097-3956)
+                  </button>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Horario de Atención</span>
+                  <p>
+                    Lunes a Sábado: <strong>9:00 a.m. – 6:00 p.m.</strong><br />
+                    Domingos: <strong>Cerrado</strong> (puedes dejar tu lista
+                    enviada por WhatsApp o registrada en el formulario).
+                  </p>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Modalidad de Compra y Apartados</span>
+                  <p>
+                    Tienda 100% virtual con asesoría personalizada y sistema de
+                    apartados abonando el <strong>50% del valor</strong> de la
+                    prenda (cancelando el restante en la fecha acordada).
+                  </p>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Entregas Personales y Envíos</span>
+                  <p>
+                    <strong>Entregas personales:</strong> San José, Parque
+                    Central, todos los sábados a partir del mediodía.<br />
+                    <strong>Envíos:</strong> A todo el país consultando tu
+                    ubicación para indicar el costo.
+                  </p>
+                </div>
+
+                <div class="info-item">
+                  <span class="info-label">Métodos de Pago Aceptados</span>
+                  <p>
+                    <strong>SINPE Móvil</strong> y <strong>Efectivo</strong>.
+                    Elige el método que te resulte más cómodo al confirmar tu
+                    compra.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulario Directo en la Página Sincronizado con WhatsApp -->
+            <div class="contact-form-card">
+              <h3>Registra tu solicitud y envíala a WhatsApp</h3>
+              <p class="form-subtitle">
+                Los campos se guardan automáticamente mientras escribes y se
+                unen con las prendas de <strong>Mi Lista</strong>.
+              </p>
+
+              <form id="orderRequestForm" class="order-form">
+                <div class="form-group">
+                  <label for="reqName">Nombre completo</label>
+                  <input
+                    type="text"
+                    id="reqName"
+                    name="reqName"
+                    placeholder="Ej. María Fernanda López"
+                    required
+                  />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="reqPhone">Teléfono</label>
+                    <input
+                      type="tel"
+                      id="reqPhone"
+                      name="reqPhone"
+                      placeholder="Ej. 8888-8888"
+                      required
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="reqEmail">Correo electrónico</label>
+                    <input
+                      type="email"
+                      id="reqEmail"
+                      name="reqEmail"
+                      placeholder="Ej. maria@correo.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="reqCategory">Categoría principal de interés</label>
+                  <select id="reqCategory" name="reqCategory" required>
+                    <option value="">Selecciona una categoría...</option>
+                    <option value="Blusas y Tops (₡12,500 – ₡16,900)">
+                      1. Blusas y Tops (₡12,500 – ₡16,900)
+                    </option>
+                    <option value="Vestidos y Conjuntos (₡18,900 – ₡26,500)">
+                      2. Vestidos y Conjuntos (₡18,900 – ₡26,500)
+                    </option>
+                    <option value="Pantalones y Jeans (₡17,500 – ₡24,000)">
+                      3. Pantalones y Jeans (₡17,500 – ₡24,000)
+                    </option>
+                    <option value="Accesorios y Temporada (₡5,500 – ₡11,900)">
+                      4. Accesorios y Temporada (₡5,500 – ₡11,900)
+                    </option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="reqDetails">
+                    Lista de prendas y detalles (talla, color, cantidad, entrega)
+                  </label>
+                  <textarea
+                    id="reqDetails"
+                    name="reqDetails"
+                    rows="4"
+                    placeholder="Tus prendas seleccionadas en el catálogo aparecerán aquí automáticamente, o escribe los detalles que buscas..."
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="form-buttons-stack">
+                  <button type="submit" class="btn btn-whatsapp btn-full">
+                    📲 Guardar Ficha y Enviar Lista por WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    id="saveOnlyFormBtn"
+                    class="btn btn-outline btn-full"
+                  >
+                    💾 Guardar Ficha en Pantalla (Sin abrir WhatsApp)
+                  </button>
+                </div>
+              </form>
+
+              <!-- Confirmación en Pantalla -->
+              <div
+                class="order-confirmation hidden"
+                id="orderConfirmation"
+                aria-live="polite"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- BARRA FLOTANTE DE WHATSAPP Y LISTA GUARDADA -->
+    <div class="floating-wa-bar" id="floatingWaBar">
+      <a href="#mi-lista" class="floating-list-pill" id="floatingListPill">
+        🛍️ Mi Lista: <strong id="floatingListCount">0</strong> prendas
+      </a>
+      <button
+        type="button"
+        class="floating-wa-btn"
+        id="floatingWhatsappBtn"
+        aria-label="Enviar mi lista por WhatsApp a ANGEL MOON"
+      >
+        <span class="wa-icon" aria-hidden="true">💬</span>
+        <span id="floatingWaText">Enviar a WhatsApp</span>
+      </button>
+    </div>
+
+    <!-- 8. FOOTER -->
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <img src="logo.png" alt="Logo ANGEL MOON" class="footer-logo" />
+          <div>
+            <strong class="footer-name">ANGEL MOON</strong>
+            <p class="footer-tagline">
+              Fashion • Style • More — WhatsApp Oficial: +506 7097-3956
+            </p>
+          </div>
+        </div>
+
+        <nav class="footer-links" aria-label="Enlaces rápidos">
+          <a href="#nosotros">Nosotros</a>
+          <a href="#coleccion">Colección y Precios</a>
+          <a href="#mi-lista">Mi Lista</a>
+          <a href="#asistente">Asistente</a>
+          <a href="#contacto">Contacto</a>
+        </nav>
+
+        <p class="footer-copy">
+          © <span id="currentYear"></span> ANGEL MOON. Todos los derechos
+          reservados.
+        </p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
