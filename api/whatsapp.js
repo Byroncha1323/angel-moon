@@ -1,8 +1,15 @@
-import { getCache, metric } from "@vercel/functions";
-
 /**
- * Catálogo oficial de prendas y accesorios por número para el menú de WhatsApp de ANGEL MOON
+ * ANGEL MOON — Webhook Oficial de WhatsApp Cloud API + Simulador Web
+ * Archivo: api/whatsapp.js (Serverless Function en Vercel, cero dependencias externas)
+ *
+ * Funcionalidades:
+ * - GET  /api/whatsapp : Verificación del Webhook ante Meta for Developers y estado del servicio
+ * - POST /api/whatsapp :
+ *     1) mode: "simulate" -> Procesa el flujo paso a paso desde el chatbot de la página web
+ *     2) object: "whatsapp_business_account" -> Recibe mensajes reales de WhatsApp, responde
+ *        automáticamente paso a paso y notifica a la encargada (50670973956) al completar.
  */
+
 const SERVICE_MENU = {
   "1": "1. Blusas Satinadas y Casuales (₡12.500 – ₡14.900)",
   "2": "2. Tops y Bodys Modernos (₡8.900 – ₡11.900)",
@@ -15,32 +22,24 @@ const SERVICE_MENU = {
   "9": "9. Accesorios Femeninos Rose Gold (Desde ₡2.500)",
 };
 
-const SESSION_TTL_SECONDS = 3600; // 1 hora por sesión
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hora por sesión
+const memorySessions = new Map();
 
-async function loadSession(sessionId) {
-  try {
-    const cache = getCache({ namespace: "angel-moon-whatsapp-bot" });
-    const data = await cache.get(`session:${sessionId}`);
-    if (data && typeof data === "object") {
-      return data;
-    }
-  } catch (err) {
-    console.error("Error leyendo sesión desde Runtime Cache:", err);
+function loadSession(sessionId) {
+  const entry = memorySessions.get(sessionId);
+  if (!entry) return null;
+  if (Date.now() - entry.updatedAt > SESSION_TTL_MS) {
+    memorySessions.delete(sessionId);
+    return null;
   }
-  return null;
+  return entry;
 }
 
-async function saveSession(sessionId, sessionData) {
-  try {
-    const cache = getCache({ namespace: "angel-moon-whatsapp-bot" });
-    await cache.set(`session:${sessionId}`, sessionData, {
-      ttl: SESSION_TTL_SECONDS,
-      tags: ["angel-moon-sessions"],
-      name: "angel-moon-conversation-state",
-    });
-  } catch (err) {
-    console.error("Error guardando sesión en Runtime Cache:", err);
-  }
+function saveSession(sessionId, sessionData) {
+  memorySessions.set(sessionId, {
+    ...sessionData,
+    updatedAt: Date.now(),
+  });
 }
 
 function buildNumberedMenuText(customerName) {
@@ -62,11 +61,11 @@ function buildNumberedMenuText(customerName) {
 /**
  * Procesa el mensaje entrante según el paso actual de la clienta en ANGEL MOON
  */
-export async function processConversationStep(sessionId, incomingText, existingSession = null) {
+export function processConversationStep(sessionId, incomingText, existingSession = null) {
   const cleanText = (incomingText || "").trim();
   const lower = cleanText.toLowerCase();
 
-  let session = existingSession || (await loadSession(sessionId));
+  let session = existingSession || loadSession(sessionId);
 
   const isResetKeyword =
     !session ||
@@ -91,7 +90,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
       details: "",
       updatedAt: Date.now(),
     };
-    await saveSession(sessionId, newSession);
+    saveSession(sessionId, newSession);
 
     const reply =
       `¡Holaaa! 👋 Bienvenida a *ANGEL MOON* _(Fashion · Style · More)_. Gracias por escribirnos. Estamos felices de ayudarte.\n\n` +
@@ -113,8 +112,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
 
     session.name = cleanText;
     session.step = "ASK_PHONE";
-    session.updatedAt = Date.now();
-    await saveSession(sessionId, session);
+    saveSession(sessionId, session);
 
     const reply =
       `¡Muchas gracias, *${session.name}*! 💖\n\n` +
@@ -135,8 +133,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
 
     session.phone = cleanText;
     session.step = "ASK_EMAIL";
-    session.updatedAt = Date.now();
-    await saveSession(sessionId, session);
+    saveSession(sessionId, session);
 
     const reply =
       `Perfecto, teléfono registrado (${session.phone}). 📱\n\n` +
@@ -156,8 +153,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
 
     session.email = cleanText;
     session.step = "ASK_SERVICE";
-    session.updatedAt = Date.now();
-    await saveSession(sessionId, session);
+    saveSession(sessionId, session);
 
     const reply = buildNumberedMenuText(session.name);
     return { reply, session };
@@ -180,8 +176,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
     session.serviceNumber = chosenNumber;
     session.serviceName = SERVICE_MENU[chosenNumber];
     session.step = "ASK_DETAILS";
-    session.updatedAt = Date.now();
-    await saveSession(sessionId, session);
+    saveSession(sessionId, session);
 
     const reply =
       `Has elegido la categoría:\n✅ *${session.serviceName}*\n\n` +
@@ -194,13 +189,7 @@ export async function processConversationStep(sessionId, incomingText, existingS
   if (session.step === "ASK_DETAILS") {
     session.details = cleanText;
     session.step = "COMPLETED";
-    session.updatedAt = Date.now();
-    await saveSession(sessionId, session);
-
-    metric("whatsapp.orders.completed", 1, {
-      outcome: "success",
-      service_option: session.serviceNumber || "unknown",
-    });
+    saveSession(sessionId, session);
 
     const reply =
       `🎉 *¡Solicitud Registrada con Éxito en ANGEL MOON!*\n\n` +
@@ -274,13 +263,11 @@ export async function GET(request) {
 
   if (mode === "subscribe") {
     if (token === expectedVerifyToken) {
-      metric("whatsapp.webhook.verify", 1, { outcome: "success" });
       return new Response(challenge, {
         status: 200,
         headers: { "Content-Type": "text/plain" },
       });
     }
-    metric("whatsapp.webhook.verify", 1, { outcome: "forbidden" });
     return new Response("Token de verificación inválido", { status: 403 });
   }
 
@@ -298,6 +285,7 @@ export async function GET(request) {
     ],
     configured: {
       hasAccessToken: Boolean(process.env.WHATSAPP_ACCESS_TOKEN),
+      hasPhoneNumberId: Boolean(process.env.WHATSAPP_PHONE_NUMBER_ID),
       hasCustomVerifyToken: Boolean(process.env.WHATSAPP_VERIFY_TOKEN),
     },
   });
@@ -309,8 +297,6 @@ export async function GET(request) {
  * - También soporta `mode: "simulate"` desde el chatbot de la página web
  */
 export async function POST(request) {
-  const startedAt = performance.now();
-
   try {
     const body = await request.json();
 
@@ -320,12 +306,7 @@ export async function POST(request) {
       const text = body.text || "hola";
       const clientSession = body.session || null;
 
-      const result = await processConversationStep(sessionId, text, clientSession);
-      metric("whatsapp.webhook.messages", 1, {
-        outcome: "success",
-        source: "web_simulator",
-        step: result.session?.step || "unknown",
-      });
+      const result = processConversationStep(sessionId, text, clientSession);
 
       return Response.json({
         ok: true,
@@ -350,11 +331,11 @@ export async function POST(request) {
           message.interactive?.list_reply?.title ||
           "hola";
 
-        const result = await processConversationStep(from, incomingText);
+        const result = processConversationStep(from, incomingText);
 
         await sendWhatsAppCloudMessage(phoneNumberId, from, result.reply);
 
-        // Si la clienta completó los 5 pasos, notifica el resumen a la encargada (por defecto 50670973956)
+        // Si la clienta completó los 5 pasos, notifica el resumen a la encargada (50670973956)
         const ownerNumber = process.env.OWNER_WHATSAPP_NUMBER || "50670973956";
         if (result.session?.step === "COMPLETED" && ownerNumber) {
           const ownerSummary =
@@ -366,12 +347,6 @@ export async function POST(request) {
             `• *Talla y Detalles:* ${result.session.details}`;
           await sendWhatsAppCloudMessage(phoneNumberId, ownerNumber, ownerSummary);
         }
-
-        metric("whatsapp.webhook.messages", 1, {
-          outcome: "success",
-          source: "whatsapp_cloud",
-          step: result.session?.step || "unknown",
-        });
       }
 
       return Response.json({ status: "EVENT_RECEIVED" }, { status: 200 });
@@ -384,7 +359,5 @@ export async function POST(request) {
       { ok: false, error: "Error procesando la solicitud del webhook" },
       { status: 500 }
     );
-  } finally {
-    metric("whatsapp.webhook.duration_ms", performance.now() - startedAt);
   }
 }
