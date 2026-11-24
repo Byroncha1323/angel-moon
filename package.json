@@ -1,0 +1,13 @@
+{
+  "name": "angel-moon",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sitio web oficial y Webhook de WhatsApp Cloud API para ANGEL MOON Boutique",
+  "dependencies": {
+    "@vercel/functions": "^3.10.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

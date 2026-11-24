@@ -1,1240 +1,712 @@
 /* ==========================================================================
-   ANGEL MOON — Lógica Principal y Conexión a WhatsApp API (script.js)
-   Proyecto Final • Curso: Servicio al Cliente • Año 2026
-
-   ARQUITECTURA Y FUNCIONALIDADES:
-   1. Configuración oficial de WhatsApp API (https://wa.me/50670973956)
-   2. Persistencia en LocalStorage:
-      - Lista de prendas seleccionadas (talla, modalidad de apartado/compra, cantidad)
-      - Datos de la clienta ingresados en el Asistente o en el Formulario
-   3. Menú hamburguesa adaptable y año actual dinámico
-   4. Indicador de horario en vivo ("Abierta ahora" / "Cerrada ahora")
-   5. Catálogo interactivo con selectores de talla, modalidad y envío directo
-   6. Pestañas (Tabs) de Calidad y Experiencia de Atención
-   7. Asistente Virtual Dual (Modo FAQ + Modo Pedido Paso a Paso de 5 niveles)
-      conectado a la lista guardada y a WhatsApp Business
-   8. Formulario sincronizado con confirmación en pantalla y salto a WhatsApp
+   ANGEL MOON — Lógica Principal y Asistente Conectado a WhatsApp (script.js)
+   Formato y flujo idénticos al proyecto Bazar Copi Art, adaptados a ANGEL MOON
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-  /* ------------------------------------------------------------------------
-     1. CONSTANTES DE WHATSAPP API Y CLAVES DE ALMACENAMIENTO LOCAL
-     ------------------------------------------------------------------------ */
-  const WHATSAPP_NUMBER = "50670973956";
-  const WHATSAPP_BASE_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
-  const STORAGE_KEY_LIST = "angel_moon_saved_list_v1";
-  const STORAGE_KEY_CUSTOMER = "angel_moon_customer_v1";
-
-  /* ------------------------------------------------------------------------
-     2. ESTADO PERSISTENTE (LISTA DE PRENDAS Y DATOS DE LA CLIENTA)
-     ------------------------------------------------------------------------ */
-  let savedList = loadFromStorage(STORAGE_KEY_LIST, []);
-  let customerProfile = loadFromStorage(STORAGE_KEY_CUSTOMER, {
-    name: "",
-    phone: "",
-    email: "",
-    category: "",
-    details: "",
-  });
+  const WHATSAPP_PHONE = "50670973956";
+  const WHATSAPP_BASE_URL = `https://wa.me/${WHATSAPP_PHONE}`;
+  const STORAGE_ORDER_KEY = "angel_moon_saved_order_v2";
 
   /**
-   * Lee un valor JSON desde localStorage de forma segura
+   * Genera la URL oficial de la API de WhatsApp con el mensaje pre-cargado
    */
-  function loadFromStorage(key, fallback) {
+  function buildWhatsAppUrl(text) {
+    if (!text) return WHATSAPP_BASE_URL;
+    return `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(text)}`;
+  }
+
+  /**
+   * Guarda en localStorage la última solicitud de la clienta y actualiza el botón flotante
+   */
+  function saveOrderToPageMemory(orderText) {
     try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
+      localStorage.setItem(STORAGE_ORDER_KEY, orderText);
     } catch {
-      return fallback;
+      // Ignorar si el navegador bloquea storage
+    }
+    const floatLink = document.getElementById("whatsappFloatLink");
+    if (floatLink && orderText) {
+      floatLink.href = buildWhatsAppUrl(orderText);
     }
   }
 
-  /**
-   * Guarda un valor JSON en localStorage de forma segura
-   */
-  function saveToStorage(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch {
-      // Ignorar errores de cuota en navegadores privados restringidos
-    }
+  /* 1. Año actual en el footer */
+  const yearEl = document.getElementById("currentYear");
+  if (yearEl) {
+    yearEl.textContent = new Date().getFullYear();
   }
 
-  /**
-   * Formatea un número en colones costarricenses (ej. ₡14,500)
-   */
-  function formatColones(amount) {
-    return "₡" + Number(amount || 0).toLocaleString("es-CR");
-  }
-
-  /* ------------------------------------------------------------------------
-     3. GENERADOR DE MENSAJES Y CONEXIÓN A LA API DE WHATSAPP
-     ------------------------------------------------------------------------ */
-  /**
-   * Construye el texto estructurado con la lista de prendas guardadas,
-   * totales, cálculo del 50% de apartado y datos de la clienta.
-   */
-  function buildWhatsAppMessage(customContext = "") {
-    const lines = [
-      "✨ *HOLA ANGEL MOON* ✨",
-      "Me gustaría recibir atención sobre la siguiente solicitud desde la página web:",
-      "",
-    ];
-
-    if (customContext) {
-      lines.push(`📌 *Motivo / Consulta:* ${customContext}`);
-      lines.push("");
-    }
-
-    // Incluir datos de la clienta si ya fueron ingresados en la web o asistente
-    if (
-      customerProfile.name ||
-      customerProfile.phone ||
-      customerProfile.email
-    ) {
-      lines.push("👩 *DATOS DE LA CLIENTA:*");
-      if (customerProfile.name) lines.push(`• Nombre: ${customerProfile.name}`);
-      if (customerProfile.phone) lines.push(`• Teléfono: ${customerProfile.phone}`);
-      if (customerProfile.email) lines.push(`• Correo: ${customerProfile.email}`);
-      if (customerProfile.category) {
-        lines.push(`• Categoría de interés: ${customerProfile.category}`);
-      }
-      lines.push("");
-    }
-
-    // Incluir la lista de prendas seleccionadas en el catálogo
-    if (savedList.length > 0) {
-      lines.push("🛍️ *MI LISTA DE PRENDAS SELECCIONADAS:*");
-      let total = 0;
-
-      savedList.forEach((item, index) => {
-        const subtotal = item.priceNumber * item.qty;
-        total += subtotal;
-        lines.push(
-          `${index + 1}. *${item.name}* (${item.qty} und.) — Talla: *${item.size}* — ${item.modality} — Subtotal: ${formatColones(subtotal)}`
-        );
-      });
-
-      const deposit50 = Math.round(total * 0.5);
-      lines.push("");
-      lines.push(`💰 *Total estimado de la lista:* ${formatColones(total)}`);
-      lines.push(`💎 *Monto para apartar con el 50%:* ${formatColones(deposit50)}`);
-      lines.push("");
-    }
-
-    // Incluir detalles adicionales escritos por la clienta
-    if (customerProfile.details) {
-      lines.push(`📝 *Detalles adicionales:* ${customerProfile.details}`);
-      lines.push("");
-    }
-
-    lines.push("💳 *Métodos de pago:* SINPE Móvil / Efectivo");
-    lines.push(
-      "📍 *Entrega:* A coordinar (Parque Central San José sábados desde mediodía o envío)."
-    );
-    lines.push("¡Muchas gracias!");
-
-    return lines.join("\n");
-  }
-
-  /**
-   * Abre la API oficial de WhatsApp (https://wa.me/50670973956?text=...)
-   * en una nueva pestaña con toda la información guardada en la página.
-   */
-  function openWhatsAppWithSavedState(customContext = "") {
-    syncFormToCustomerProfile();
-    const message = buildWhatsAppMessage(customContext);
-    const url = `${WHATSAPP_BASE_URL}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
-  /* ------------------------------------------------------------------------
-     4. AÑO DINÁMICO Y MENÚ HAMBURGUESA RESPONSIVE
-     ------------------------------------------------------------------------ */
-  const currentYearEl = document.getElementById("currentYear");
-  if (currentYearEl) {
-    currentYearEl.textContent = String(new Date().getFullYear());
-  }
-
-  const hamburgerBtn = document.getElementById("hamburgerBtn");
+  /* 2. Menú móvil */
+  const menuToggle = document.getElementById("menuToggle");
   const mainNav = document.getElementById("mainNav");
 
-  if (hamburgerBtn && mainNav) {
-    hamburgerBtn.addEventListener("click", () => {
+  if (menuToggle && mainNav) {
+    menuToggle.addEventListener("click", () => {
       const isOpen = mainNav.classList.toggle("open");
-      hamburgerBtn.setAttribute("aria-expanded", String(isOpen));
+      menuToggle.setAttribute("aria-expanded", String(isOpen));
     });
 
-    mainNav.querySelectorAll("a, button").forEach((el) => {
-      el.addEventListener("click", () => {
+    mainNav.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => {
         mainNav.classList.remove("open");
-        hamburgerBtn.setAttribute("aria-expanded", "false");
+        menuToggle.setAttribute("aria-expanded", "false");
       });
     });
   }
 
-  /* ------------------------------------------------------------------------
-     5. INDICADOR EN VIVO DEL HORARIO DE ATENCIÓN
-     Horario oficial: Lunes (1) a Sábado (6) de 9:00 a.m. a 6:00 p.m.
-     ------------------------------------------------------------------------ */
+  /* 3. Estado en vivo del horario de atención */
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+
   function updateStoreStatus() {
-    const pill = document.getElementById("storeStatusPill");
-    const text = document.getElementById("storeStatusText");
-    if (!pill || !text) return;
+    if (!statusDot || !statusText) return;
 
     const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const isOpenDay = day >= 1 && day <= 6;
-    const isOpenHour = hour >= 9 && hour < 18;
+    const day = now.getDay(); // 0 = Domingo, 1..6 = Lunes a Sábado
+    const minutes = now.getHours() * 60 + now.getMinutes();
 
-    if (isOpenDay && isOpenHour) {
-      pill.classList.remove("is-closed");
-      text.textContent = "Abierta ahora • Lun–Sáb 9:00 a.m. – 6:00 p.m.";
+    let isOpen = false;
+    let message = "";
+
+    if (day >= 1 && day <= 6) {
+      // Lunes a Sábado: 9:00 a.m. (540) a 6:00 p.m. (1080)
+      isOpen = minutes >= 540 && minutes < 1080;
+      message = isOpen
+        ? "Abierta ahora · Lun-Sáb hasta las 6:00 p.m. (Entregas Sáb 12 m.d.)"
+        : "Cerrada ahora · Atención Lun-Sáb de 9:00 a.m. a 6:00 p.m.";
     } else {
-      pill.classList.add("is-closed");
-      text.textContent = "Cerrada ahora • Lun–Sáb 9:00 a.m. – 6:00 p.m.";
+      isOpen = false;
+      message = "Domingo: envíanos tu consulta o apartado por WhatsApp";
     }
+
+    statusDot.classList.toggle("open", isOpen);
+    statusDot.classList.toggle("closed", !isOpen);
+    statusText.textContent = message;
   }
+
   updateStoreStatus();
   setInterval(updateStoreStatus, 60000);
 
-  /* ------------------------------------------------------------------------
-     6. CATÁLOGO INTERACTIVO + GESTIÓN DE "MI LISTA DE PRENDAS"
-     ------------------------------------------------------------------------ */
-  const CATALOG_ITEMS = [
-    {
-      id: "blusa-aurora",
-      category: "blusas",
-      categoryLabel: "Blusas y Tops",
-      selectValue: "Blusas y Tops (₡12,500 – ₡16,900)",
-      name: "Blusa Satinada Aurora",
-      priceNumber: 14500,
-      sizes: ["S", "M", "L"],
-      badge: "Tendencia 2026",
-      description:
-        "Diseño suave con caída elegante y acabados delicados, ideal para oficina o salidas casuales.",
-    },
-    {
-      id: "top-luna",
-      category: "blusas",
-      categoryLabel: "Blusas y Tops",
-      selectValue: "Blusas y Tops (₡12,500 – ₡16,900)",
-      name: "Top Drapeado Rose",
-      priceNumber: 12500,
-      sizes: ["XS", "S", "M"],
-      badge: "Nuevo ingreso",
-      description:
-        "Corte moderno y cómodo que realza tu estilo personal con telas frescas y versátiles.",
-    },
-    {
-      id: "vestido-brisa",
-      category: "vestidos",
-      categoryLabel: "Vestidos y Conjuntos",
-      selectValue: "Vestidos y Conjuntos (₡18,900 – ₡26,500)",
-      name: "Vestido Midi Brisa",
-      priceNumber: 21900,
-      sizes: ["S", "M", "L"],
-      badge: "Más buscado",
-      description:
-        "Silueta femenina fluida y favorecedora para eventos, tardes especiales o días soleados.",
-    },
-    {
-      id: "conjunto-lunar",
-      category: "vestidos",
-      categoryLabel: "Vestidos y Conjuntos",
-      selectValue: "Vestidos y Conjuntos (₡18,900 – ₡26,500)",
-      name: "Conjunto Seda Empolvada",
-      priceNumber: 24500,
-      sizes: ["S", "M", "L"],
-      badge: "Favorito",
-      description:
-        "Dos piezas coordinadas con acabados de alta calidad para lucir impecable sin esfuerzo.",
-    },
-    {
-      id: "pantalon-palazzo",
-      category: "pantalones",
-      categoryLabel: "Pantalones y Jeans",
-      selectValue: "Pantalones y Jeans (₡17,500 – ₡24,000)",
-      name: "Pantalón Palazzo Marfil",
-      priceNumber: 19500,
-      sizes: ["28", "30", "32", "34"],
-      badge: "Comodidad total",
-      description:
-        "Tiro alto estilizado con tela ligera de excelente caída y movimiento.",
-    },
-    {
-      id: "jeans-sculpt",
-      category: "pantalones",
-      categoryLabel: "Pantalones y Jeans",
-      selectValue: "Pantalones y Jeans (₡17,500 – ₡24,000)",
-      name: "Jeans Tiro Alto Clásico",
-      priceNumber: 22000,
-      sizes: ["26", "28", "30", "32"],
-      badge: "Esencial",
-      description:
-        "Denim cómodo con ajuste anatómico que combina con cualquier blusa o top.",
-    },
-    {
-      id: "set-accesorios",
-      category: "accesorios",
-      categoryLabel: "Accesorios / Temporada",
-      selectValue: "Accesorios y Temporada (₡5,500 – ₡11,900)",
-      name: "Set Accesorios Oro Rosa",
-      priceNumber: 7900,
-      sizes: ["Talla Única"],
-      badge: "Complemento",
-      description:
-        "Aretes y collar delicados en tono oro rosa para elevar cualquier conjunto.",
-    },
-    {
-      id: "bolso-moon",
-      category: "accesorios",
-      categoryLabel: "Accesorios / Temporada",
-      selectValue: "Accesorios y Temporada (₡5,500 – ₡11,900)",
-      name: "Cartera Crossbody Perla",
-      priceNumber: 11500,
-      sizes: ["Talla Única"],
-      badge: "Últimas unidades",
-      description:
-        "Tamaño práctico con correa ajustable y herrajes metálicos en tono cálido.",
-    },
-  ];
+  /* 4. Filtro de colección y precios */
+  const filterButtons = document.querySelectorAll(".filter-btn");
+  const serviceCards = document.querySelectorAll(".service-card");
 
-  const catalogGrid = document.getElementById("catalogGrid");
-  const filterBtns = document.querySelectorAll(".filter-btn");
-
-  /**
-   * Agrega una prenda seleccionada (con talla y modalidad) a la lista persistente
-   */
-  function addItemToSavedList(item, chosenSize, chosenModality) {
-    const existingIndex = savedList.findIndex(
-      (entry) =>
-        entry.id === item.id &&
-        entry.size === chosenSize &&
-        entry.modality === chosenModality
-    );
-
-    if (existingIndex > -1) {
-      savedList[existingIndex].qty += 1;
-    } else {
-      savedList.push({
-        id: item.id,
-        name: item.name,
-        categoryLabel: item.categoryLabel,
-        selectValue: item.selectValue,
-        priceNumber: item.priceNumber,
-        size: chosenSize,
-        modality: chosenModality,
-        qty: 1,
-      });
-    }
-
-    // Si la clienta aún no tenía categoría seleccionada en su perfil, asignamos la de esta prenda
-    if (!customerProfile.category) {
-      customerProfile.category = item.selectValue;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-    }
-
-    saveToStorage(STORAGE_KEY_LIST, savedList);
-    renderSavedList();
-    populateFormFromSavedState();
-  }
-
-  /**
-   * Renderiza el panel "Mi Lista de Prendas para Pedir o Apartar" y actualiza contadores
-   */
-  function renderSavedList() {
-    const container = document.getElementById("savedListItems");
-    const totalEl = document.getElementById("listTotalAmount");
-    const depositEl = document.getElementById("listDepositAmount");
-    const navCountEl = document.getElementById("navListCount");
-    const floatCountEl = document.getElementById("floatingListCount");
-    const floatTextEl = document.getElementById("floatingWaText");
-
-    const totalItemsCount = savedList.reduce((acc, item) => acc + item.qty, 0);
-    const totalPrice = savedList.reduce(
-      (acc, item) => acc + item.priceNumber * item.qty,
-      0
-    );
-    const deposit50 = Math.round(totalPrice * 0.5);
-
-    if (navCountEl) navCountEl.textContent = String(totalItemsCount);
-    if (floatCountEl) floatCountEl.textContent = String(totalItemsCount);
-    if (floatTextEl) {
-      floatTextEl.textContent =
-        totalItemsCount > 0
-          ? `Enviar Lista (${totalItemsCount}) a WhatsApp`
-          : "Consultar en WhatsApp";
-    }
-    if (totalEl) totalEl.textContent = formatColones(totalPrice);
-    if (depositEl) depositEl.textContent = formatColones(deposit50);
-
-    if (!container) return;
-
-    if (savedList.length === 0) {
-      container.innerHTML = `
-        <div class="empty-list-msg">
-          Aún no has agregado prendas a tu lista. Elige la talla y haz clic en
-          <strong>"➕ Agregar a mi lista"</strong> en cualquier prenda del catálogo
-          para que quede guardada al pasar a WhatsApp.
-        </div>
-      `;
-      return;
-    }
-
-    container.innerHTML = savedList
-      .map(
-        (item, idx) => `
-      <div class="saved-item-row">
-        <div class="saved-item-info">
-          <strong>${idx + 1}. ${item.name} — Talla: ${item.size}</strong>
-          <span>${item.modality} • ${formatColones(item.priceNumber)} c/u • Subtotal: <strong>${formatColones(
-          item.priceNumber * item.qty
-        )}</strong></span>
-        </div>
-        <div class="saved-item-controls">
-          <button type="button" class="qty-btn" data-action="dec" data-idx="${idx}" aria-label="Disminuir cantidad">−</button>
-          <strong>${item.qty}</strong>
-          <button type="button" class="qty-btn" data-action="inc" data-idx="${idx}" aria-label="Aumentar cantidad">+</button>
-          <button type="button" class="remove-item-btn" data-action="remove" data-idx="${idx}">Quitar</button>
-        </div>
-      </div>
-    `
-      )
-      .join("");
-
-    // Eventos de + / - / quitar
-    container.querySelectorAll("button[data-action]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const action = btn.getAttribute("data-action");
-        const index = Number(btn.getAttribute("data-idx"));
-        if (Number.isNaN(index) || !savedList[index]) return;
-
-        if (action === "inc") {
-          savedList[index].qty += 1;
-        } else if (action === "dec") {
-          savedList[index].qty -= 1;
-          if (savedList[index].qty <= 0) savedList.splice(index, 1);
-        } else if (action === "remove") {
-          savedList.splice(index, 1);
-        }
-
-        saveToStorage(STORAGE_KEY_LIST, savedList);
-        renderSavedList();
-        populateFormFromSavedState();
-      });
-    });
-  }
-
-  /**
-   * Renderiza las tarjetas del catálogo con selector de talla, modalidad y botones
-   */
-  function renderCatalog(category) {
-    if (!catalogGrid) return;
-    const items =
-      category === "todos"
-        ? CATALOG_ITEMS
-        : CATALOG_ITEMS.filter((item) => item.category === category);
-
-    catalogGrid.innerHTML = items
-      .map((item) => {
-        const deposit = Math.round(item.priceNumber * 0.5);
-        const sizeOptions = item.sizes
-          .map((s) => `<option value="${s}">Talla ${s}</option>`)
-          .join("");
-
-        return `
-      <article class="product-card" data-product-id="${item.id}">
-        <div>
-          <div class="product-top">
-            <span class="product-category">${item.categoryLabel}</span>
-            <span class="product-badge">${item.badge}</span>
-          </div>
-          <h3 class="product-title">${item.name}</h3>
-          <p class="product-desc">${item.description}</p>
-
-          <div class="product-selectors">
-            <div class="selector-field">
-              <label for="size-${item.id}">Talla deseada</label>
-              <select id="size-${item.id}" class="item-size-select">
-                ${sizeOptions}
-              </select>
-            </div>
-            <div class="selector-field">
-              <label for="mod-${item.id}">Modalidad</label>
-              <select id="mod-${item.id}" class="item-mod-select">
-                <option value="Apartado con 50%">Apartado 50%</option>
-                <option value="Compra de contado">Compra completa</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-meta">
-          <div class="product-price-row">
-            <span class="product-price">${formatColones(item.priceNumber)}</span>
-            <span class="product-deposit-hint">Apartado 50%: ${formatColones(deposit)}</span>
-          </div>
-          <div class="product-actions">
-            <button
-              type="button"
-              class="btn btn-accent add-to-list-btn"
-              data-id="${item.id}"
-            >
-              ➕ Agregar a mi lista
-            </button>
-            <button
-              type="button"
-              class="btn btn-whatsapp direct-wa-item-btn"
-              data-id="${item.id}"
-            >
-              📲 Pedir en WhatsApp
-            </button>
-          </div>
-        </div>
-      </article>
-    `;
-      })
-      .join("");
-
-    // Evento: Agregar a Mi Lista Guardada
-    catalogGrid.querySelectorAll(".add-to-list-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const product = CATALOG_ITEMS.find((p) => p.id === id);
-        if (!product) return;
-
-        const sizeEl = document.getElementById(`size-${id}`);
-        const modEl = document.getElementById(`mod-${id}`);
-        const chosenSize = sizeEl ? sizeEl.value : product.sizes[0];
-        const chosenMod = modEl ? modEl.value : "Apartado con 50%";
-
-        addItemToSavedList(product, chosenSize, chosenMod);
-
-        const originalText = btn.textContent;
-        btn.textContent = "✅ ¡Guardada en tu lista!";
-        setTimeout(() => {
-          btn.textContent = originalText;
-        }, 1600);
-      });
-    });
-
-    // Evento: Agregar a la lista y abrir WhatsApp directamente
-    catalogGrid.querySelectorAll(".direct-wa-item-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        const product = CATALOG_ITEMS.find((p) => p.id === id);
-        if (!product) return;
-
-        const sizeEl = document.getElementById(`size-${id}`);
-        const modEl = document.getElementById(`mod-${id}`);
-        const chosenSize = sizeEl ? sizeEl.value : product.sizes[0];
-        const chosenMod = modEl ? modEl.value : "Apartado con 50%";
-
-        addItemToSavedList(product, chosenSize, chosenMod);
-        openWhatsAppWithSavedState(
-          `Quiero consultar/apartar "${product.name}" en talla ${chosenSize} (${chosenMod})`
-        );
-      });
-    });
-  }
-
-  filterBtns.forEach((btn) => {
+  filterButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      filterBtns.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const cat = btn.getAttribute("data-category") || "todos";
-      renderCatalog(cat);
-    });
-  });
+      const filter = btn.dataset.filter;
 
-  renderCatalog("todos");
-  renderSavedList();
-
-  // Botones del panel "Mi Lista"
-  document
-    .getElementById("sendListWhatsappBtn")
-    ?.addEventListener("click", () => {
-      openWhatsAppWithSavedState("Envío mi lista de prendas seleccionadas en la web");
-    });
-
-  document
-    .getElementById("completeListInAssistantBtn")
-    ?.addEventListener("click", () => {
-      document.getElementById("asistente")?.scrollIntoView({
-        behavior: "smooth",
-      });
-      startOrderMode();
-    });
-
-  document
-    .getElementById("clearSavedListBtn")
-    ?.addEventListener("click", () => {
-      savedList = [];
-      saveToStorage(STORAGE_KEY_LIST, savedList);
-      renderSavedList();
-      populateFormFromSavedState();
-    });
-
-  /* ------------------------------------------------------------------------
-     7. PESTAÑAS DE CALIDAD Y EXPERIENCIA DE ATENCIÓN
-     ------------------------------------------------------------------------ */
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const tabPanels = document.querySelectorAll(".tab-panel");
-
-  tabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("data-tab");
-      tabBtns.forEach((b) => {
+      filterButtons.forEach((b) => {
         b.classList.remove("active");
         b.setAttribute("aria-selected", "false");
       });
-      tabPanels.forEach((p) => p.classList.remove("active"));
-
       btn.classList.add("active");
       btn.setAttribute("aria-selected", "true");
-      document.getElementById(`tab-${targetId}`)?.classList.add("active");
+
+      serviceCards.forEach((card) => {
+        const match = filter === "all" || card.dataset.category === filter;
+        card.classList.toggle("hidden", !match);
+      });
     });
   });
 
-  /* ------------------------------------------------------------------------
-     8. ASISTENTE VIRTUAL DUAL CONECTADO A LA LISTA Y A WHATSAPP API
-     ------------------------------------------------------------------------ */
-  const chatMessagesEl = document.getElementById("chatMessages");
-  const chatQuickBarEl = document.getElementById("chatQuickBar");
-  const chatForm = document.getElementById("chatForm");
-  const chatInput = document.getElementById("chatInput");
-  const chatModeBadge = document.getElementById("chatModeBadge");
-  const switchFaqModeBtn = document.getElementById("switchFaqModeBtn");
-  const switchOrderModeBtn = document.getElementById("switchOrderModeBtn");
-  const resetChatBtn = document.getElementById("resetChatBtn");
-  const startOrderFlowBtn = document.getElementById("startOrderFlowBtn");
+  /* 5. Pestañas de Calidad y Compromiso */
+  const qTabs = document.querySelectorAll(".q-tab");
+  const qPanels = document.querySelectorAll(".q-panel");
 
-  const ORDER_CATEGORIES = [
-    {
-      num: "1",
-      label: "Blusas y Tops (₡12,500 – ₡16,900)",
-      value: "Blusas y Tops (₡12,500 – ₡16,900)",
+  qTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const targetId = `panel-${tab.dataset.qtab}`;
+
+      qTabs.forEach((t) => t.classList.remove("active"));
+      qPanels.forEach((p) => p.classList.remove("active"));
+
+      tab.classList.add("active");
+      const targetPanel = document.getElementById(targetId);
+      if (targetPanel) targetPanel.classList.add("active");
+    });
+  });
+
+  /* 6. Formulario rápido para preparar pedido y abrir WhatsApp con el texto listo */
+  const orderForm = document.getElementById("whatsappOrderForm");
+  const formFeedback = document.getElementById("formFeedback");
+
+  if (orderForm) {
+    orderForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("customerName").value.trim();
+      const service = document.getElementById("serviceType").value;
+      const details = document.getElementById("orderDetails").value.trim();
+
+      const formattedMessage =
+        `Hola ANGEL MOON ✨, mi nombre es ${name}.\n` +
+        `• Prenda de interés: ${service}\n` +
+        `• Detalles / Talla: ${details}`;
+
+      saveOrderToPageMemory(formattedMessage);
+
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(formattedMessage);
+          copied = true;
+        } catch {
+          copied = false;
+        }
+      }
+
+      if (formFeedback) {
+        formFeedback.textContent = copied
+          ? "✅ Pedido guardado y copiado. Abriendo WhatsApp con tu solicitud lista..."
+          : "Abriendo WhatsApp oficial de ANGEL MOON con tu solicitud...";
+      }
+
+      window.open(buildWhatsAppUrl(formattedMessage), "_blank", "noopener,noreferrer");
+    });
+  }
+
+  /* 7. Chatbot de Preguntas Frecuentes (FAQ) de ANGEL MOON */
+  const chatbotMessages = document.getElementById("chatbotMessages");
+  const chatbotForm = document.getElementById("chatbotForm");
+  const chatbotInput = document.getElementById("chatbotInput");
+  const chatbotReset = document.getElementById("chatbotReset");
+  const faqChips = document.querySelectorAll(".faq-chip");
+
+  const FAQ_DATA = {
+    ropa: {
+      question: "¿Qué tipo de ropa venden y cómo sé si está disponible?",
+      answer:
+        "• <strong>¿Qué tipo de ropa venden?</strong> Contamos con diferentes prendas y estilos femeninos (blusas, tops, vestidos, conjuntos, pantalones, jeans y accesorios) para que encuentres opciones que se adapten a tus gustos y preferencias.<br>" +
+        "• <strong>¿Cómo saber si está disponible?</strong> Envíanos una fotografía de la prenda que te interesa por WhatsApp y con gusto verificaremos su disponibilidad inmediata.",
     },
-    {
-      num: "2",
-      label: "Vestidos y Conjuntos (₡18,900 – ₡26,500)",
-      value: "Vestidos y Conjuntos (₡18,900 – ₡26,500)",
+    precios: {
+      question: "¿Cuáles son los precios y qué tallas tienen?",
+      answer:
+        "• <strong>Precios:</strong> Los precios varían según cada prenda (accesorios desde ₡2.500, tops desde ₡8.900, blusas desde ₡12.500 y vestidos/conjuntos desde ₡16.500). Si nos compartes una fotografía, te confirmaremos su precio exacto.<br>" +
+        "• <strong>Tallas disponibles:</strong> Las tallas dependen de cada prenda (XS, S, M, L y 26 a 34). Escríbenos cuál te interesa para verificar las medidas y la disponibilidad.",
     },
-    {
-      num: "3",
-      label: "Pantalones y Jeans (₡17,500 – ₡24,000)",
-      value: "Pantalones y Jeans (₡17,500 – ₡24,000)",
+    apartados: {
+      question: "¿Realizan apartados y qué pasa si no cancelo a tiempo?",
+      answer:
+        "• <strong>¿Realizan apartados?</strong> ¡Sí! Puedes apartar tu prenda abonando el <strong>50% de su valor</strong>. El monto restante debe cancelarse en la fecha acordada.<br>" +
+        "• <strong>¿Qué sucede si no cancelo en la fecha acordada?</strong> Para mantener el orden de los apartados, es importante respetar la fecha de pago establecida. De lo contrario, no podremos continuar con el apartado.",
     },
-    {
-      num: "4",
-      label: "Accesorios y Temporada (₡5,500 – ₡11,900)",
-      value: "Accesorios y Temporada (₡5,500 – ₡11,900)",
+    entregas: {
+      question: "¿Dónde realizan entregas personales y hacen envíos?",
+      answer:
+        "• <strong>Entregas personales:</strong> Realizamos entregas personales en <strong>San José, en el Parque Central, los sábados a partir del mediodía</strong>.<br>" +
+        "• <strong>Envíos:</strong> ¡Claro! Escríbenos tu ubicación para consultar las opciones de envío disponibles y sus respectivos costos.",
     },
-  ];
-
-  const WELCOME_TEXT =
-    "¡Holaaa! Bienvenida a ANGEL MOON. Gracias por escribirnos. Estamos felices de ayudarte.\n¿Qué información necesitas?\n• Ver prendas disponibles.\n• Consultar precios y tallas.\n• Información sobre apartados.\n• Información sobre entregas.\n• Pasar mi lista directo a WhatsApp.\n¡Estamos para servirte!";
-
-  const FALLBACK_TEXT =
-    "¡Disculpa! No logré comprender tu consulta. ¿Podrías explicarme un poquito más? Si lo prefieres, puedo pasarte directamente con la encargada por WhatsApp (+506 7097-3956) llevando tu lista de prendas guardadas.";
-
-  const FAREWELL_TEXT =
-    "¡Gracias por escribirnos! Esperamos que hayas encontrado algo que te guste. Recuerda que estamos aquí para ayudarte cuando quieras renovar tu estilo. ¡Será un gusto tenerte de vuelta!";
-
-  const FAQ_ANSWERS = {
-    horario:
-      "Nuestro horario de atención es de Lunes a Sábado de 9:00 a.m. a 6:00 p.m. Además, realizamos entregas personales en San José, Parque Central, los sábados a partir del mediodía.\n\nPuedes hacer tu pedido paso a paso aquí mismo o enviarnos tu lista por WhatsApp.",
-    precios:
-      "Contamos con diferentes prendas y estilos con precios accesibles:\n• Blusas y Tops: ₡12,500 – ₡16,900\n• Vestidos y Conjuntos: ₡18,900 – ₡26,500\n• Pantalones y Jeans: ₡17,500 – ₡24,000\n• Accesorios y Temporada: ₡5,500 – ₡11,900\n\nAgrega tus favoritas en el catálogo y pásalas listas a nuestro WhatsApp.",
-    tallas:
-      "Las tallas dependen de cada prenda (XS, S, M, L y tallas 26 a 34 en pantalones y jeans). Puedes elegir tu talla en cada tarjeta del catálogo para guardarla en tu lista de WhatsApp.",
-    pagos:
-      "Aceptamos pagos mediante SINPE Móvil o efectivo. Puedes elegir la opción que te resulte más cómoda al confirmar tu compra o apartado.",
-    apartados:
-      "¡Sí realizamos apartados! Puedes apartar tu prenda abonando el 50% de su valor y el monto restante debe cancelarse en la fecha acordada. Es importante respetar la fecha de pago establecida para mantener el orden de los apartados.",
-    envios:
-      "Realizamos entregas personales en San José, en el Parque Central, los sábados a partir del mediodía. ¡También realizamos envíos! Escríbenos tu ubicación por WhatsApp para consultar las opciones y costos.",
-    cambios:
-      "Para consultar si es posible realizar un cambio o hablar directamente con la encargada, puedes abrir nuestro WhatsApp Business (+506 7097-3956) con el botón de abajo y revisaremos tu caso personalmente.",
+    pagos: {
+      question: "¿Qué métodos de pago aceptan y cómo compro?",
+      answer:
+        "• <strong>¿Cómo realizar una compra?</strong> ¡Es muy sencillo! Envíanos una fotografía de la prenda que deseas o completa el pedido paso a paso aquí mismo y te ayudaremos con el proceso.<br>" +
+        "• <strong>Métodos de pago:</strong> Aceptamos pagos mediante <strong>SINPE Móvil o efectivo</strong>. Puedes elegir la opción que te resulte más cómoda.",
+    },
+    cambios: {
+      question: "¿Puedo cambiar una prenda o hablar con la encargada?",
+      answer:
+        "• <strong>¿Puedo cambiar una prenda?</strong> Para consultar si es posible realizar un cambio, comunícate directamente con la encargada y revisaremos tu caso.<br>" +
+        "• <strong>¿Cómo hablar con una persona?</strong> ¡Por supuesto! Déjanos tu consulta en WhatsApp y la encargada continuará atendiéndote personalmente.",
+    },
+    canales: {
+      question: "¿Cuáles son los canales de comunicación de la tienda?",
+      answer:
+        "Puedes encontrarnos y comunicarte con <strong>ANGEL MOON</strong> a través de:<br>" +
+        "• <strong>WhatsApp Business (+506 7097-3956):</strong> Atención personalizada, consultas, recepción de pedidos, catálogos, pagos y entregas.<br>" +
+        "• <strong>Instagram:</strong> Fotografías de prendas, conjuntos, novedades, promociones, historias y reels.<br>" +
+        "• <strong>TikTok:</strong> Videos de prendas, combinaciones de outfits y tendencias.<br>" +
+        "• <strong>Facebook:</strong> Publicaciones de productos, Marketplace y grupos de ventas.",
+    },
   };
 
-  let chatMode = "faq"; // "faq" | "order"
-  let orderStep = 0; // 1..5
-
-  function getTime() {
-    return new Date().toLocaleTimeString("es-CR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function normalizeText(str) {
-    return str
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim();
-  }
-
-  /**
-   * Agrega una burbuja de mensaje al chat con botones interactivos opcionales
-   */
-  function appendMessage(sender, text, options = {}) {
-    if (!chatMessagesEl) return;
-    const row = document.createElement("div");
-    row.className = `msg-row ${sender}`;
-
-    const bubble = document.createElement("div");
-    bubble.className = "msg-bubble";
-    bubble.textContent = text;
-
-    // Opciones numeradas de categoría en el Paso 4
-    if (options.categoryButtons) {
-      const list = document.createElement("div");
-      list.className = "chat-option-list";
-      ORDER_CATEGORIES.forEach((cat) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "chat-option-btn";
-        btn.textContent = `${cat.num}. ${cat.label}`;
-        btn.addEventListener("click", () => {
-          handleUserMessage(cat.num);
-        });
-        list.appendChild(btn);
-      });
-      bubble.appendChild(list);
-    }
-
-    // Acciones al finalizar ficha o requerir WhatsApp (Copiar + Enviar a WhatsApp)
-    if (options.copyFichaText || options.showWhatsAppButton) {
-      const actionsRow = document.createElement("div");
-      actionsRow.className = "chat-bubble-actions";
-
-      if (options.copyFichaText) {
-        const copyBtn = document.createElement("button");
-        copyBtn.type = "button";
-        copyBtn.className = "copy-ficha-btn";
-        copyBtn.textContent = "📋 Copiar Ficha";
-        copyBtn.addEventListener("click", () => {
-          navigator.clipboard?.writeText(options.copyFichaText).then(() => {
-            copyBtn.textContent = "✅ ¡Copiada!";
-            setTimeout(() => {
-              copyBtn.textContent = "📋 Copiar Ficha";
-            }, 2200);
-          });
-        });
-        actionsRow.appendChild(copyBtn);
-      }
-
-      if (options.showWhatsAppButton) {
-        const waBtn = document.createElement("button");
-        waBtn.type = "button";
-        waBtn.className = "wa-ficha-btn";
-        waBtn.textContent =
-          options.waButtonLabel || "📲 Enviar Lista y Ficha a WhatsApp";
-        waBtn.addEventListener("click", () => {
-          openWhatsAppWithSavedState(options.waContext || "");
-        });
-        actionsRow.appendChild(waBtn);
-      }
-
-      bubble.appendChild(actionsRow);
-    }
-
-    const timeEl = document.createElement("span");
-    timeEl.className = "msg-time";
-    timeEl.textContent = `${sender === "bot" ? "ANGEL MOON" : "Tú"} • ${getTime()}`;
-
-    row.appendChild(bubble);
-    row.appendChild(timeEl);
-    chatMessagesEl.appendChild(row);
-    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-  }
-
-  function renderQuickChips(chips) {
-    if (!chatQuickBarEl) return;
-    chatQuickBarEl.innerHTML = "";
-    chips.forEach((chip) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "quick-chip";
-      btn.textContent = chip.label;
-      btn.addEventListener("click", chip.onClick);
-      chatQuickBarEl.appendChild(btn);
-    });
-  }
-
-  function setModeUI(mode) {
-    chatMode = mode;
-    if (chatModeBadge) {
-      chatModeBadge.textContent =
-        mode === "faq"
-          ? "Modo: Preguntas Frecuentes"
-          : `Modo: Pedido Paso a Paso (Paso ${orderStep || 1} de 5)`;
-    }
-    switchFaqModeBtn?.classList.toggle("active", mode === "faq");
-    switchOrderModeBtn?.classList.toggle("active", mode === "order");
-  }
-
-  function initFaqMode() {
-    setModeUI("faq");
-    orderStep = 0;
-    if (chatMessagesEl) chatMessagesEl.innerHTML = "";
-    appendMessage("bot", WELCOME_TEXT, {
-      showWhatsAppButton: savedList.length > 0,
-      waButtonLabel: `📲 Enviar Mi Lista (${savedList.length}) a WhatsApp`,
-      waContext: "Consulta con mi lista de prendas desde el Asistente Virtual",
-    });
-
-    renderQuickChips([
-      {
-        label: "Precios y prendas",
-        onClick: () => triggerFaq("precios", "Consultar precios y prendas"),
-      },
-      {
-        label: "Tallas disponibles",
-        onClick: () => triggerFaq("tallas", "¿Qué tallas tienen?"),
-      },
-      {
-        label: "Apartados 50%",
-        onClick: () => triggerFaq("apartados", "¿Cómo funcionan los apartados?"),
-      },
-      {
-        label: "👗 Pedido Paso a Paso",
-        onClick: () => startOrderMode(),
-      },
-      {
-        label: "📲 Pasar a WhatsApp",
-        onClick: () =>
-          openWhatsAppWithSavedState("Consulta directa desde el Asistente Virtual"),
-      },
-    ]);
-  }
-
-  function triggerFaq(key, userLabel) {
-    if (chatMode !== "faq") {
-      setModeUI("faq");
-    }
-    appendMessage("user", userLabel);
-    appendMessage("bot", FAQ_ANSWERS[key], {
-      showWhatsAppButton: true,
-      waButtonLabel: "📲 Continuar en WhatsApp con mi lista",
-      waContext: `Consulta sobre: ${userLabel}`,
-    });
-
-    renderQuickChips([
-      {
-        label: "Métodos de pago",
-        onClick: () => triggerFaq("pagos", "¿Qué métodos de pago aceptan?"),
-      },
-      {
-        label: "Entregas y envíos",
-        onClick: () => triggerFaq("envios", "Información sobre entregas"),
-      },
-      {
-        label: "👗 Pedido Paso a Paso",
-        onClick: () => startOrderMode(),
-      },
-      {
-        label: "📲 Enviar a WhatsApp",
-        onClick: () => openWhatsAppWithSavedState(userLabel),
-      },
-    ]);
-  }
-
-  /**
-   * Inicia el flujo guiado de 5 pasos sincronizado con la lista guardada
-   */
-  function startOrderMode() {
-    setModeUI("order");
-    orderStep = 1;
-    if (chatModeBadge) {
-      chatModeBadge.textContent = "Modo: Pedido Paso a Paso (Paso 1 de 5)";
-    }
-
-    const listSummary =
-      savedList.length > 0
-        ? `\n\n🛍️ Tienes **${savedList.reduce(
-            (a, b) => a + b.qty,
-            0
-          )} prenda(s)** guardadas en tu lista que se incluirán automáticamente al finalizar.`
-        : "";
-
-    appendMessage(
-      "bot",
-      `¡Con mucho gusto te ayudo a preparar tu pedido o apartado para enviarlo listo a WhatsApp! 👗✨${listSummary}\n\nPaso 1 de 5: Por favor escribe tu **nombre completo**.`
+  function getDirectContactFollowupHTML(questionContext = "") {
+    const waHref = buildWhatsAppUrl(
+      questionContext
+        ? `Hola ANGEL MOON, tengo una consulta sobre: ${questionContext}`
+        : "Hola ANGEL MOON, me gustaría recibir atención personalizada."
     );
-
-    renderQuickChips([
-      { label: "Volver a Preguntas Frecuentes", onClick: () => initFaqMode() },
-      {
-        label: "📲 Ir directo a WhatsApp ahora",
-        onClick: () =>
-          openWhatsAppWithSavedState("Pedido directo desde el Asistente"),
-      },
-    ]);
-    chatInput?.focus();
+    return `
+      <div class="chat-direct-followup">
+        <p>¿Deseas enviar la fotografía de una prenda o hablar con la encargada?</p>
+        <a href="${waHref}" target="_blank" rel="noopener noreferrer" class="chat-wa-link">
+          💬 Contactar directamente por WhatsApp
+        </a>
+      </div>
+    `;
   }
 
-  function processOrderStep(raw) {
-    const val = raw.trim();
+  function appendChatMessage(role, htmlContent, includeFollowup = false, questionContext = "") {
+    if (!chatbotMessages) return;
 
-    if (orderStep === 1) {
-      if (val.length < 3) {
-        appendMessage(
-          "bot",
-          "Por favor ingresa tu nombre completo (mínimo 3 caracteres)."
-        );
-        return;
-      }
-      customerProfile.name = val;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-      populateFormFromSavedState();
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `chat-msg ${role}`;
 
-      orderStep = 2;
-      if (chatModeBadge)
-        chatModeBadge.textContent = "Modo: Pedido Paso a Paso (Paso 2 de 5)";
-      appendMessage(
-        "bot",
-        `¡Gracias, ${customerProfile.name}! 💖\n\nPaso 2 de 5: Escribe tu **número de teléfono** (al menos 8 dígitos) para coordinar tu entrega o apartado.`
-      );
-      return;
-    }
+    const bubbleDiv = document.createElement("div");
+    bubbleDiv.className = "chat-bubble";
+    bubbleDiv.innerHTML =
+      htmlContent + (includeFollowup ? getDirectContactFollowupHTML(questionContext) : "");
 
-    if (orderStep === 2) {
-      const digits = val.replace(/\D/g, "");
-      if (digits.length < 8) {
-        appendMessage(
-          "bot",
-          "El número de teléfono debe tener al menos 8 dígitos. Por favor verifícalo e inténtalo de nuevo."
-        );
-        return;
-      }
-      customerProfile.phone = val;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-      populateFormFromSavedState();
-
-      orderStep = 3;
-      if (chatModeBadge)
-        chatModeBadge.textContent = "Modo: Pedido Paso a Paso (Paso 3 de 5)";
-      appendMessage(
-        "bot",
-        "Paso 3 de 5: Ahora ingresa tu **correo electrónico** (ejemplo: maria@correo.com)."
-      );
-      return;
-    }
-
-    if (orderStep === 3) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(val)) {
-        appendMessage(
-          "bot",
-          "Por favor ingresa un correo electrónico válido (ejemplo: maria@correo.com)."
-        );
-        return;
-      }
-      customerProfile.email = val;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-      populateFormFromSavedState();
-
-      orderStep = 4;
-      if (chatModeBadge)
-        chatModeBadge.textContent = "Modo: Pedido Paso a Paso (Paso 4 de 5)";
-      appendMessage(
-        "bot",
-        "Paso 4 de 5: Selecciona la **categoría principal de prenda** escribiendo el número (1, 2, 3 o 4) o haciendo clic sobre la opción:",
-        { categoryButtons: true }
-      );
-      return;
-    }
-
-    if (orderStep === 4) {
-      const found = ORDER_CATEGORIES.find(
-        (c) =>
-          c.num === val || normalizeText(c.label).includes(normalizeText(val))
-      );
-      if (!found) {
-        appendMessage(
-          "bot",
-          "Por favor escribe un número válido del 1 al 4 o haz clic en una de las categorías anteriores.",
-          { categoryButtons: true }
-        );
-        return;
-      }
-      customerProfile.category = found.value;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-      populateFormFromSavedState();
-
-      orderStep = 5;
-      if (chatModeBadge)
-        chatModeBadge.textContent = "Modo: Pedido Paso a Paso (Paso 5 de 5)";
-      appendMessage(
-        "bot",
-        `Elegiste: ${found.label}.\n\nPaso 5 de 5: Indica la **talla deseada, color, cantidad** o detalles de entrega (ejemplo: Talla M, color rosa, apartado 50% para recoger el sábado en Parque Central).`
-      );
-      return;
-    }
-
-    if (orderStep === 5) {
-      if (val.length < 3) {
-        appendMessage(
-          "bot",
-          "Por favor detalla la talla, color o preferencia de entrega para completar tu ficha."
-        );
-        return;
-      }
-      customerProfile.details = val;
-      saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
-      populateFormFromSavedState();
-
-      orderStep = 0;
-      setModeUI("faq");
-
-      const ficha = buildWhatsAppMessage(
-        "Pedido / Apartado completado paso a paso en la web"
-      );
-
-      appendMessage(
-        "bot",
-        `¡Excelente, ${customerProfile.name}! 🎉 Hemos guardado toda tu información en la página y generado tu ficha completa con tu lista de prendas.\n\nHaz clic en **"📲 Enviar Lista y Ficha a WhatsApp"** para pasar directo al WhatsApp de ANGEL MOON con todo listo:\n\n${ficha}`,
-        {
-          copyFichaText: ficha,
-          showWhatsAppButton: true,
-          waButtonLabel: "📲 Enviar Lista y Ficha a WhatsApp (+506 7097-3956)",
-          waContext: "Pedido / Apartado completado paso a paso en la web",
-        }
-      );
-
-      renderQuickChips([
-        {
-          label: "📲 Abrir WhatsApp con mi pedido",
-          onClick: () =>
-            openWhatsAppWithSavedState(
-              "Pedido / Apartado completado paso a paso en la web"
-            ),
-        },
-        {
-          label: "Ver formulario autocompletado",
-          onClick: () =>
-            document
-              .getElementById("contacto")
-              ?.scrollIntoView({ behavior: "smooth" }),
-        },
-        { label: "Finalizar consulta", onClick: () => handleUserMessage("Gracias") },
-      ]);
-    }
+    msgDiv.appendChild(bubbleDiv);
+    chatbotMessages.appendChild(msgDiv);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
   }
 
-  function processFaqInput(raw) {
-    const q = normalizeText(raw);
+  function matchFreeTextQuestion(rawText) {
+    const text = rawText.toLowerCase();
 
-    if (/\b(whatsapp|encargada|asesora|pasar a whatsapp)\b/.test(q)) {
-      appendMessage(
-        "bot",
-        "¡Claro que sí! Haz clic en el botón de abajo para pasar a nuestro WhatsApp oficial (+506 7097-3956) llevando automáticamente tu lista de prendas guardadas.",
-        {
-          showWhatsAppButton: true,
-          waButtonLabel: "📲 Abrir WhatsApp con Mi Lista",
-          waContext: "Solicitud de atención personalizada con la encargada",
-        }
+    if (
+      text.includes("gracias") ||
+      text.includes("adios") ||
+      text.includes("adiós") ||
+      text.includes("chao") ||
+      text.includes("hasta luego")
+    ) {
+      return (
+        "¡Gracias por escribirnos! 💖 Esperamos que hayas encontrado algo que te guste. " +
+        "Recuerda que estamos aquí para ayudarte cuando quieras renovar tu estilo. ¡Será un gusto tenerte de vuelta!"
       );
-      return;
     }
-    if (/\b(gracias|adios|chao|bye|hasta luego|finalizar)\b/.test(q)) {
-      appendMessage("bot", FAREWELL_TEXT, {
-        showWhatsAppButton: true,
-        waButtonLabel: "📲 Enviar mi lista por WhatsApp",
-      });
-      return;
+    if (
+      text.includes("apartado") ||
+      text.includes("apartar") ||
+      text.includes("50%") ||
+      text.includes("abono") ||
+      text.includes("fecha") ||
+      text.includes("no cancelo")
+    ) {
+      return FAQ_DATA.apartados.answer;
     }
-    if (/^(hola|buenas|buenos dias|buenas tardes|buenas noches)\b/.test(q)) {
-      appendMessage("bot", WELCOME_TEXT);
-      return;
+    if (
+      text.includes("entrega") ||
+      text.includes("envio") ||
+      text.includes("envío") ||
+      text.includes("parque central") ||
+      text.includes("san jose") ||
+      text.includes("san josé") ||
+      text.includes("sabado") ||
+      text.includes("sábado") ||
+      text.includes("mediodia") ||
+      text.includes("ubicacion")
+    ) {
+      return FAQ_DATA.entregas.answer;
     }
-    if (/(apartad|apartar|50%|abono|fecha)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.apartados, {
-        showWhatsAppButton: true,
-        waContext: "Consulta sobre apartados del 50%",
-      });
-      return;
+    if (
+      text.includes("sinpe") ||
+      text.includes("pago") ||
+      text.includes("pagar") ||
+      text.includes("efectivo") ||
+      text.includes("comprar") ||
+      text.includes("compra")
+    ) {
+      return FAQ_DATA.pagos.answer;
     }
-    if (/(pago|pagar|sinpe|efectivo|metodo)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.pagos, {
-        showWhatsAppButton: true,
-        waContext: "Consulta sobre pago con SINPE Móvil / Efectivo",
-      });
-      return;
+    if (
+      text.includes("precio") ||
+      text.includes("costo") ||
+      text.includes("cuanto") ||
+      text.includes("cuánto") ||
+      text.includes("talla") ||
+      text.includes("medida")
+    ) {
+      return FAQ_DATA.precios.answer;
     }
-    if (/(entrega|envio|parque central|san jose|sabado|ubicacion)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.envios, {
-        showWhatsAppButton: true,
-        waContext: "Consulta sobre entregas y envíos",
-      });
-      return;
+    if (
+      text.includes("ropa") ||
+      text.includes("prenda") ||
+      text.includes("disponible") ||
+      text.includes("vestido") ||
+      text.includes("blusa") ||
+      text.includes("conjunto") ||
+      text.includes("pantalon") ||
+      text.includes("jean") ||
+      text.includes("accesorio")
+    ) {
+      return FAQ_DATA.ropa.answer;
     }
-    if (/(horario|abierto|abierta|hora|cerrado)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.horario);
-      return;
+    if (
+      text.includes("cambio") ||
+      text.includes("cambiar") ||
+      text.includes("encargada") ||
+      text.includes("persona") ||
+      text.includes("hablar")
+    ) {
+      return FAQ_DATA.cambios.answer;
     }
-    if (/(talla|medida|tamano)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.tallas, {
-        showWhatsAppButton: true,
-        waContext: "Consulta de tallas y medidas",
-      });
-      return;
-    }
-    if (/(precio|cuesta|valor|ropa|prenda|disponible|comprar|pedido)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.precios, {
-        showWhatsAppButton: true,
-        waContext: "Consulta de disponibilidad y precios",
-      });
-      return;
-    }
-    if (/(cambio|cambiar|persona|hablar)/.test(q)) {
-      appendMessage("bot", FAQ_ANSWERS.cambios, {
-        showWhatsAppButton: true,
-        waContext: "Consulta con la encargada",
-      });
-      return;
+    if (
+      text.includes("instagram") ||
+      text.includes("tiktok") ||
+      text.includes("facebook") ||
+      text.includes("redes") ||
+      text.includes("canal") ||
+      text.includes("horario")
+    ) {
+      return FAQ_DATA.canales.answer;
     }
 
-    appendMessage("bot", FALLBACK_TEXT, {
-      showWhatsAppButton: true,
-      waButtonLabel: "📲 Hablar con la encargada en WhatsApp",
-      waContext: raw,
-    });
+    // Mensaje oficial del documento cuando el chatbot no comprende una pregunta
+    return (
+      "¡Disculpa! No logré comprender tu consulta. ¿Podrías explicarme un poquito más? " +
+      "Si lo prefieres, puedo comunicarte con la encargada por WhatsApp para brindarte una atención personalizada."
+    );
   }
 
-  function handleUserMessage(rawText) {
-    const clean = rawText.trim();
-    if (!clean) return;
-    appendMessage("user", clean);
+  faqChips.forEach((chip) => {
+    if (chip.id === "startStepOrderBtn") return;
+    chip.addEventListener("click", () => {
+      const key = chip.dataset.faq;
+      const item = FAQ_DATA[key];
+      if (!item) return;
 
-    if (chatMode === "order" && orderStep > 0) {
-      processOrderStep(clean);
-    } else {
-      processFaqInput(clean);
-    }
-  }
+      stepBotActive = false;
+      stepSession = null;
 
-  chatForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    if (!chatInput) return;
-    const text = chatInput.value;
-    chatInput.value = "";
-    handleUserMessage(text);
-  });
-
-  document.querySelectorAll(".faq-quick-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.getAttribute("data-faq");
-      if (key && FAQ_ANSWERS[key]) {
-        triggerFaq(key, btn.textContent.trim());
-      }
+      appendChatMessage("user", item.question, false);
+      setTimeout(() => {
+        appendChatMessage("bot", item.answer, true, item.question);
+      }, 220);
     });
   });
 
-  startOrderFlowBtn?.addEventListener("click", () => startOrderMode());
-  switchOrderModeBtn?.addEventListener("click", () => startOrderMode());
-  switchFaqModeBtn?.addEventListener("click", () => initFaqMode());
-  resetChatBtn?.addEventListener("click", () => initFaqMode());
+  /* 8. Modo Bot Paso a Paso (Nombre -> Teléfono -> Correo -> Menú 1 al 9 -> Detalles -> Enviar armado a WhatsApp) */
+  const startStepOrderBtn = document.getElementById("startStepOrderBtn");
+  let stepBotActive = false;
+  let stepSession = null;
+  const webSessionId = "web-" + Math.random().toString(36).slice(2, 10);
 
-  /* ------------------------------------------------------------------------
-     9. SINCRONIZACIÓN ENTRE FORMULARIO, LOCALSTORAGE Y BOTONES DE WHATSAPP
-     ------------------------------------------------------------------------ */
-  const reqName = document.getElementById("reqName");
-  const reqPhone = document.getElementById("reqPhone");
-  const reqEmail = document.getElementById("reqEmail");
-  const reqCategory = document.getElementById("reqCategory");
-  const reqDetails = document.getElementById("reqDetails");
-  const orderRequestForm = document.getElementById("orderRequestForm");
-  const orderConfirmation = document.getElementById("orderConfirmation");
+  const STEP_SERVICE_MENU = {
+    "1": "1. Blusas Satinadas y Casuales (₡12.500 – ₡14.900)",
+    "2": "2. Tops y Bodys Modernos (₡8.900 – ₡11.900)",
+    "3": "3. Vestidos Midi y de Ocasión (₡16.500 – ₡21.900)",
+    "4": "4. Conjuntos Coordinados 2 Piezas (₡18.900 – ₡24.500)",
+    "5": "5. Pantalones Palazzo y Tiro Alto (₡17.500 – ₡19.900)",
+    "6": "6. Jeans y Faldas Modernas (₡13.900 – ₡21.500)",
+    "7": "7. Blazers y Suéteres de Temporada (₡14.500 – ₡22.900)",
+    "8": "8. Bolsos y Carteras (₡10.500 – ₡12.900)",
+    "9": "9. Accesorios Femeninos Rose Gold (Desde ₡2.500)",
+  };
 
-  /**
-   * Rellena el formulario inferior con lo que está guardado en memoria
-   */
-  function populateFormFromSavedState() {
-    if (reqName && customerProfile.name) reqName.value = customerProfile.name;
-    if (reqPhone && customerProfile.phone) reqPhone.value = customerProfile.phone;
-    if (reqEmail && customerProfile.email) reqEmail.value = customerProfile.email;
-    if (reqCategory && customerProfile.category) {
-      reqCategory.value = customerProfile.category;
+  function buildWhatsAppOrderText(session) {
+    return (
+      `Hola ANGEL MOON ✨, quiero realizar el siguiente pedido / apartado:\n` +
+      `• Nombre: ${session.name}\n` +
+      `• Teléfono: ${session.phone}\n` +
+      `• Correo: ${session.email}\n` +
+      `• Prenda / Categoría: ${session.serviceName}\n` +
+      `• Talla y Detalles: ${session.details}`
+    );
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        return false;
+      }
     }
-
-    if (reqDetails) {
-      const listSummary =
-        savedList.length > 0
-          ? "Prendas en mi lista: " +
-            savedList
-              .map(
-                (i) => `${i.name} (Talla ${i.size}, ${i.qty} und., ${i.modality})`
-              )
-              .join("; ") +
-            ". "
-          : "";
-      reqDetails.value =
-        customerProfile.details || listSummary.trim();
-    }
+    return false;
   }
 
-  /**
-   * Guarda en localStorage lo que la clienta escriba en el formulario en tiempo real
-   */
-  function syncFormToCustomerProfile() {
-    if (reqName) customerProfile.name = reqName.value.trim();
-    if (reqPhone) customerProfile.phone = reqPhone.value.trim();
-    if (reqEmail) customerProfile.email = reqEmail.value.trim();
-    if (reqCategory) customerProfile.category = reqCategory.value.trim();
-    if (reqDetails) customerProfile.details = reqDetails.value.trim();
-    saveToStorage(STORAGE_KEY_CUSTOMER, customerProfile);
+  function renderNumberedMenuButtonsHTML() {
+    const buttons = Object.entries(STEP_SERVICE_MENU)
+      .map(
+        ([num, label]) =>
+          `<button type="button" class="chat-num-btn" data-menu-num="${num}">${label}</button>`
+      )
+      .join("");
+    return `<div class="chat-menu-options">${buttons}</div>`;
   }
 
-  [reqName, reqPhone, reqEmail, reqCategory, reqDetails].forEach((field) => {
-    field?.addEventListener("input", syncFormToCustomerProfile);
-    field?.addEventListener("change", syncFormToCustomerProfile);
-  });
-
-  function showConfirmationSummary() {
-    syncFormToCustomerProfile();
-    if (!orderConfirmation) return;
-    orderConfirmation.classList.remove("hidden");
-    orderConfirmation.textContent =
-      "✅ ¡Información guardada en la página y lista para WhatsApp!\n\n" +
-      buildWhatsAppMessage("Solicitud registrada en el formulario web");
-  }
-
-  // Enviar formulario y abrir WhatsApp con toda la lista
-  orderRequestForm?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    showConfirmationSummary();
-    openWhatsAppWithSavedState("Solicitud registrada desde el formulario web");
-  });
-
-  // Guardar solo en pantalla sin abrir pestaña externa
-  document
-    .getElementById("saveOnlyFormBtn")
-    ?.addEventListener("click", () => {
-      showConfirmationSummary();
+  function attachStepBotInteractiveListeners(containerEl, completedSession) {
+    // Botones del menú numérico (1 al 9)
+    containerEl.querySelectorAll(".chat-num-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const num = btn.getAttribute("data-menu-num");
+        if (!num) return;
+        handleStepBotUserInput(num);
+      });
     });
 
-  // Conectar todos los botones globales de WhatsApp en la página y asistente
-  [
-    "navWhatsappBtn",
-    "heroWhatsappBtn",
-    "assistantDirectWhatsappBtn",
-    "chatHeaderWhatsappBtn",
-    "contactCardWhatsappBtn",
-    "floatingWhatsappBtn",
-  ].forEach((btnId) => {
-    document.getElementById(btnId)?.addEventListener("click", () => {
-      openWhatsAppWithSavedState(
-        "Consulta y lista de prendas desde la página web ANGEL MOON"
+    // Acciones finales cuando el pedido está completo
+    if (completedSession) {
+      const waText = buildWhatsAppOrderText(completedSession);
+      const waUrlWithText = buildWhatsAppUrl(waText);
+      const sendWaBtn = containerEl.querySelector(".js-send-order-wa");
+      const copyOrderBtn = containerEl.querySelector(".js-copy-order-wa");
+      const noticeEl = containerEl.querySelector(".js-copied-notice");
+
+      if (sendWaBtn) {
+        sendWaBtn.href = waUrlWithText;
+        sendWaBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          await copyTextToClipboard(waText);
+          if (noticeEl) {
+            noticeEl.textContent =
+              "✅ ¡Abriendo WhatsApp de ANGEL MOON con tu pedido ya escrito!";
+          }
+          window.open(waUrlWithText, "_blank", "noopener,noreferrer");
+        });
+      }
+
+      if (copyOrderBtn) {
+        copyOrderBtn.addEventListener("click", async () => {
+          const copied = await copyTextToClipboard(waText);
+          if (noticeEl) {
+            noticeEl.textContent = copied
+              ? "✅ ¡Ficha copiada al portapapeles! Lista para enviar en WhatsApp."
+              : "No se pudo copiar automáticamente.";
+          }
+        });
+      }
+    }
+  }
+
+  function appendStepBotMessage(htmlContent, extraHTML = "", completedSession = null) {
+    if (!chatbotMessages) return;
+
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "chat-msg bot";
+
+    const bubbleDiv = document.createElement("div");
+    bubbleDiv.className = "chat-bubble";
+    bubbleDiv.innerHTML = htmlContent + extraHTML;
+
+    msgDiv.appendChild(bubbleDiv);
+    chatbotMessages.appendChild(msgDiv);
+    attachStepBotInteractiveListeners(bubbleDiv, completedSession);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+  }
+
+  async function processLocalOrRemoteStep(userText) {
+    const clean = (userText || "").trim();
+    const lower = clean.toLowerCase();
+
+    // Sincronizar en segundo plano con /api/whatsapp en Vercel
+    fetch("/api/whatsapp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "simulate",
+        sessionId: webSessionId,
+        text: clean,
+        session: stepSession,
+      }),
+    }).catch(() => {});
+
+    const isReset =
+      !stepSession ||
+      lower === "hola" ||
+      lower === "inicio" ||
+      lower === "menu" ||
+      lower === "menú" ||
+      lower === "reiniciar";
+
+    if (isReset || stepSession.step === "COMPLETED") {
+      stepSession = {
+        step: "ASK_NAME",
+        name: "",
+        phone: "",
+        email: "",
+        serviceNumber: "",
+        serviceName: "",
+        details: "",
+      };
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Paso 1: Escribe tu nombre completo...";
+      }
+      appendStepBotMessage(
+        "¡Perfecto! Vamos a preparar tu pedido o apartado paso a paso para <strong>ANGEL MOON</strong>. 👗✨<br><br>" +
+          "<strong>Paso 1 de 5:</strong> Por favor escribe tu <strong>nombre completo</strong>:"
       );
-    });
-  });
+      return;
+    }
 
-  populateFormFromSavedState();
-  initFaqMode();
+    if (stepSession.step === "ASK_NAME") {
+      if (clean.length < 2) {
+        appendStepBotMessage("Por favor escribe tu <strong>nombre completo</strong> para continuar:");
+        return;
+      }
+      stepSession.name = clean;
+      stepSession.step = "ASK_PHONE";
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Paso 2: Escribe tu número de teléfono (ej. 8888-8888)...";
+      }
+      appendStepBotMessage(
+        `¡Mucho gusto, <strong>${stepSession.name}</strong>! 💖<br><br>` +
+          `<strong>Paso 2 de 5:</strong> Indícanos tu <strong>número de teléfono</strong> de contacto (ej. 8888-8888):`
+      );
+      return;
+    }
+
+    if (stepSession.step === "ASK_PHONE") {
+      const digits = clean.replace(/\D/g, "");
+      if (digits.length < 7) {
+        appendStepBotMessage("Por favor ingresa un <strong>número de teléfono válido</strong> (ej. 8888-8888):");
+        return;
+      }
+      stepSession.phone = clean;
+      stepSession.step = "ASK_EMAIL";
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Paso 3: Escribe tu correo electrónico (ej. maria@correo.com)...";
+      }
+      appendStepBotMessage(
+        `Teléfono registrado (<strong>${stepSession.phone}</strong>). 📱<br><br>` +
+          `<strong>Paso 3 de 5:</strong> Ahora escribe tu <strong>correo electrónico</strong>:`
+      );
+      return;
+    }
+
+    if (stepSession.step === "ASK_EMAIL") {
+      if (!clean.includes("@") || !clean.includes(".")) {
+        appendStepBotMessage("Por favor ingresa un <strong>correo electrónico válido</strong> (ej. clienta@correo.com):");
+        return;
+      }
+      stepSession.email = clean;
+      stepSession.step = "ASK_SERVICE";
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Paso 4: Escribe un número del 1 al 9 o haz clic en una opción...";
+      }
+      appendStepBotMessage(
+        `¡Gracias, <strong>${stepSession.name}</strong>! Ya guardamos tus datos.<br><br>` +
+          `<strong>Paso 4 de 5:</strong> Escribe el <strong>número (del 1 al 9)</strong> o haz clic en la categoría de prenda que buscas:`,
+        renderNumberedMenuButtonsHTML()
+      );
+      return;
+    }
+
+    if (stepSession.step === "ASK_SERVICE") {
+      const match = clean.match(/^[1-9]$/);
+      const num = match ? match[0] : null;
+      if (!num || !STEP_SERVICE_MENU[num]) {
+        appendStepBotMessage(
+          "Por favor responde con un <strong>número del 1 al 9</strong> o selecciona una categoría de la lista:",
+          renderNumberedMenuButtonsHTML()
+        );
+        return;
+      }
+      stepSession.serviceNumber = num;
+      stepSession.serviceName = STEP_SERVICE_MENU[num];
+      stepSession.step = "ASK_DETAILS";
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Paso 5: Escribe talla, color, si deseas apartado 50% o entrega...";
+      }
+      appendStepBotMessage(
+        `Has seleccionado:<br>✅ <strong>${stepSession.serviceName}</strong><br><br>` +
+          `<strong>Paso 5 de 5:</strong> Escribe la <strong>talla deseada, color, cantidad</strong> y si deseas <strong>apartado con el 50%</strong> o entrega el sábado en Parque Central / envío:`
+      );
+      return;
+    }
+
+    if (stepSession.step === "ASK_DETAILS") {
+      stepSession.details = clean;
+      stepSession.step = "COMPLETED";
+      stepBotActive = false;
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Escribe tu pregunta aquí (ej. tallas, apartados, SINPE, entregas)...";
+      }
+
+      const completedSnapshot = { ...stepSession };
+      const waFormatted = buildWhatsAppOrderText(completedSnapshot);
+      const waDirectUrl = buildWhatsAppUrl(waFormatted);
+      saveOrderToPageMemory(waFormatted);
+      await copyTextToClipboard(waFormatted);
+
+      // Rellenar también el formulario de contacto inferior automáticamente
+      const nameInput = document.getElementById("customerName");
+      const detailsInput = document.getElementById("orderDetails");
+      if (nameInput) nameInput.value = completedSnapshot.name;
+      if (detailsInput) {
+        detailsInput.value = `Tel: ${completedSnapshot.phone} | Correo: ${completedSnapshot.email} | Prenda: ${completedSnapshot.serviceName} | Detalles: ${completedSnapshot.details}`;
+      }
+
+      const summaryHTML =
+        `🎉 <strong>¡Ficha de Pedido / Apartado Lista para Enviar!</strong><br><br>` +
+        `• <strong>Clienta:</strong> ${completedSnapshot.name}<br>` +
+        `• <strong>Teléfono:</strong> ${completedSnapshot.phone}<br>` +
+        `• <strong>Correo:</strong> ${completedSnapshot.email}<br>` +
+        `• <strong>Categoría:</strong> ${completedSnapshot.serviceName}<br>` +
+        `• <strong>Talla y Detalles:</strong> ${completedSnapshot.details}<br><br>` +
+        `Tu pedido ya quedó guardado y pre-cargado. Haz clic abajo para abrir el WhatsApp de <strong>ANGEL MOON</strong> con toda tu lista ya escrita:`;
+
+      const actionsHTML = `
+        <div class="chat-order-summary-actions">
+          <a href="${waDirectUrl}" target="_blank" rel="noopener noreferrer" class="chat-wa-link js-send-order-wa">
+            📲 Enviar Pedido Armado a WhatsApp Ahora
+          </a>
+          <button type="button" class="chat-copy-btn js-copy-order-wa">
+            📋 Volver a copiar ficha del pedido
+          </button>
+          <span class="chat-copied-notice js-copied-notice">✅ Ficha guardada y lista para enviar en WhatsApp</span>
+        </div>
+      `;
+
+      appendStepBotMessage(summaryHTML, actionsHTML, completedSnapshot);
+    }
+  }
+
+  async function handleStepBotUserInput(text) {
+    appendChatMessage("user", text, false);
+    await processLocalOrRemoteStep(text);
+    if (chatbotInput) chatbotInput.focus();
+  }
+
+  if (startStepOrderBtn) {
+    startStepOrderBtn.addEventListener("click", async () => {
+      stepBotActive = true;
+      stepSession = null;
+      appendChatMessage("user", "Quiero hacer un pedido o apartado paso a paso", false);
+      await processLocalOrRemoteStep("hola");
+      if (chatbotInput) chatbotInput.focus();
+    });
+  }
+
+  if (chatbotForm && chatbotInput) {
+    chatbotForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const userQuestion = chatbotInput.value.trim();
+      if (!userQuestion) return;
+
+      chatbotInput.value = "";
+      const lower = userQuestion.toLowerCase();
+
+      if (
+        stepBotActive ||
+        lower === "hola" ||
+        lower === "menu" ||
+        lower === "menú" ||
+        lower === "pedido"
+      ) {
+        stepBotActive = true;
+        await handleStepBotUserInput(userQuestion);
+        return;
+      }
+
+      appendChatMessage("user", userQuestion, false);
+      const answerHTML = matchFreeTextQuestion(userQuestion);
+      setTimeout(() => {
+        appendChatMessage("bot", answerHTML, true, userQuestion);
+      }, 250);
+    });
+  }
+
+  if (chatbotReset && chatbotMessages) {
+    chatbotReset.addEventListener("click", () => {
+      stepBotActive = false;
+      stepSession = null;
+      if (chatbotInput) {
+        chatbotInput.placeholder = "Escribe tu pregunta aquí (ej. tallas, apartados, SINPE, entregas)...";
+      }
+      chatbotMessages.innerHTML = `
+        <div class="chat-msg bot">
+          <div class="chat-bubble">
+            ¡Holaaa! 👋 Bienvenida a <strong>ANGEL MOON</strong>. Gracias por escribirnos. Estamos felices de ayudarte.<br><br>
+            Selecciona <strong>"👗 Hacer Pedido o Apartado Paso a Paso"</strong> a la izquierda para registrar tu prenda con menú numérico, o elige una pregunta frecuente.
+          </div>
+        </div>
+      `;
+    });
+  }
 });
